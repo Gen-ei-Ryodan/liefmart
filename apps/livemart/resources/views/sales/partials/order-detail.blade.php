@@ -65,6 +65,18 @@
                     @endif
                 </td>
             </tr>
+            <tr>
+                <th>Retur</th>
+                <td>
+                    @if($order->isFullyReturned())
+                        <span class="badge bg-danger">Retur Full</span>
+                    @elseif($order->hasReturns())
+                        <span class="badge bg-warning text-dark">Retur Sebagian</span>
+                    @else
+                        <span class="badge bg-secondary">Tidak Ada</span>
+                    @endif
+                </td>
+            </tr>
         </table>
     </div>
     <div class="col-md-6">

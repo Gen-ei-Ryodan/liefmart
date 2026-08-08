@@ -55,11 +55,12 @@ class ReturFinanceService
         Log::info("Processing retur finance for order {$order->order_number}", [
             'refund_amount' => $refundAmount,
             'original_total_from_finance' => $originalOrderTotal,
-            'additional_deduction' => $additionalDeduction
+            'additional_deduction' => $additionalDeduction,
+            'is_fully_returned' => $order->isFullyReturned()
         ]);
 
-        if ($refundAmount >= $originalOrderTotal && $additionalDeduction == 0) {
-            // SCENARIO 1: Full refund - remove payment and move to unpaid
+        if ($order->isFullyReturned() && $additionalDeduction == 0) {
+            // SCENARIO 1: Full refund (kumulatif) - remove payment and move to unpaid
             $this->handleFullRefund($order, $platform);
         } else {
             // SCENARIO 2: Partial refund or has additional deduction
@@ -90,11 +91,12 @@ class ReturFinanceService
         Log::info("Processing offline retur finance for sale {$offlineSale->id}", [
             'refund_amount' => $refundAmount,
             'original_total' => $originalSaleTotal,
-            'additional_deduction' => $additionalDeduction
+            'additional_deduction' => $additionalDeduction,
+            'has_retur_full' => $offlineSale->hasReturFull()
         ]);
-        
-        if ($refundAmount >= $originalSaleTotal && $additionalDeduction == 0) {
-            // SCENARIO 1: Full refund - mark all invoices as returned and create negative entry
+
+        if ($offlineSale->hasReturFull() && $additionalDeduction == 0) {
+            // SCENARIO 1: Full refund (kumulatif) - mark all invoices as returned and create negative entry
             $this->handleOfflineFullRefund($offlineSale);
         } else {
             // SCENARIO 2: Partial refund or has additional deduction
@@ -498,12 +500,46 @@ class ReturFinanceService
             // Get the offline sale item through the relationship
             $offlineSaleItem = \App\Models\OfflineSaleItem::find($detail->offline_sale_item_id);
             if ($offlineSaleItem) {
-                $itemRefund = $offlineSaleItem->unit_price * $detail->qty;
+                // Konsisten dengan perhitungan invoice: refund juga memperhitungkan diskon
+                $itemRefund = $this->calculateOfflineItemReturAmount($offlineSaleItem, (float) $detail->qty);
                 $totalRefund += $itemRefund;
             }
         }
         
         return $totalRefund;
+    }
+
+    /**
+     * Calculate retur amount untuk satu offline sale item (termasuk diskon berjenjang).
+     * Dipakai bersama oleh calculateOfflineReturRefundAmount dan calculateReturAmountForInvoice
+     * agar perhitungan konsisten.
+     */
+    private function calculateOfflineItemReturAmount($offlineSaleItem, float $qtyRetur): float
+    {
+        $basePrice = (float) ($offlineSaleItem->unit_price ?? 0);
+        
+        // Start with base total (price × qty retur)
+        $currentTotal = $basePrice * $qtyRetur;
+        
+        // Apply percentage discounts (1-5) in cascading order
+        for ($i = 1; $i <= 5; $i++) {
+            $percentField = "discount_percent_" . $i;
+            $discountPercent = (float) ($offlineSaleItem->$percentField ?? 0);
+            if ($discountPercent > 0) {
+                $currentTotal = \App\Helpers\NumberFormatter::calculatePercentageDiscount($currentTotal, $discountPercent);
+            }
+        }
+        
+        // Apply nominal discounts (1-5) in cascading order
+        for ($i = 1; $i <= 5; $i++) {
+            $amountField = "discount_amount_" . $i;
+            $discountAmount = (float) ($offlineSaleItem->$amountField ?? 0);
+            if ($discountAmount > 0) {
+                $currentTotal = \App\Helpers\NumberFormatter::calculateNominalDiscount($currentTotal, $discountAmount * $qtyRetur);
+            }
+        }
+        
+        return \App\Helpers\NumberFormatter::formatForDatabase($currentTotal);
     }
     
     /**
@@ -625,29 +661,10 @@ class ReturFinanceService
                     }
                     
                     if ($belongsToInvoice) {
-                        $qtyRetur = (float)($detail->qty ?? 0);
-                        $basePrice = (float)($offlineSaleItem->unit_price ?? 0);
+                        $qtyRetur = (float) ($detail->qty ?? 0);
                         
-                        // Start with base total (price × qty retur)
-                        $currentTotal = $basePrice * $qtyRetur;
-                        
-                        // Apply percentage discounts (1-5) in cascading order
-                        for($i = 1; $i <= 5; $i++) {
-                            $percentField = "discount_percent_" . $i;
-                            $discountPercent = (float)($offlineSaleItem->$percentField ?? 0);
-                            if($discountPercent > 0) {
-                                $currentTotal = \App\Helpers\NumberFormatter::calculatePercentageDiscount($currentTotal, $discountPercent);
-                            }
-                        }
-                        
-                        // Apply nominal discounts (1-5) in cascading order
-                        for($i = 1; $i <= 5; $i++) {
-                            $amountField = "discount_amount_" . $i;
-                            $discountAmount = (float)($offlineSaleItem->$amountField ?? 0);
-                            if($discountAmount > 0) {
-                                $currentTotal = \App\Helpers\NumberFormatter::calculateNominalDiscount($currentTotal, $discountAmount * $qtyRetur);
-                            }
-                        }
+                        // Konsisten dengan calculateOfflineReturRefundAmount (termasuk diskon)
+                        $currentTotal = $this->calculateOfflineItemReturAmount($offlineSaleItem, $qtyRetur);
                         
                         // Add to retur amount (already includes discounts)
                         $returAmount += \App\Helpers\NumberFormatter::formatForDatabase($currentTotal);

@@ -168,20 +168,31 @@ class OfflineSale extends Model
      */
     public function getPaymentStatus()
     {
+        // Kolom status offline_sales adalah sumber kebenaran utama.
+        // Jika penjualan sudah ditandai LUNAS langsung saat input (mis. bayar tunai),
+        // anggap lunas meskipun invoice finance belum digenerate — konsisten dengan halaman detail.
+        if ($this->status === 'paid') {
+            return 'paid';
+        }
+
+        if ($this->status === 'cancelled') {
+            return 'cancelled';
+        }
+
         $invoices = $this->getInvoices();
-        
+
         if ($invoices->isEmpty()) {
             return 'pending'; // No invoices created yet
         }
-        
+
         $allPaid = $invoices->every(function($invoice) {
             return $invoice->status === 'paid';
         });
-        
+
         $anyPaid = $invoices->contains(function($invoice) {
             return $invoice->status === 'paid';
         });
-        
+
         if ($allPaid) {
             return 'paid';
         } elseif ($anyPaid) {
@@ -248,7 +259,9 @@ class OfflineSale extends Model
     }
 
     /**
-     * Check if this offline sale has any completed returns
+     * Check if this offline sale has any completed returns.
+     * Retur yang masih draft (belum di-Proses) atau dibatalkan tidak dihitung,
+     * karena barangnya belum benar-benar diretur.
      */
     public function hasReturns()
     {

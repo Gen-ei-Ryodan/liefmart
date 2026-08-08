@@ -127,7 +127,9 @@ public function shopeeFinancialTransactions()
      */
     public function hasReturns()
     {
-        return $this->returPenjualan()->exists();
+        return $this->returPenjualan()
+            ->whereIn('status', ['draft', 'selesai'])
+            ->exists();
     }
 
     /**

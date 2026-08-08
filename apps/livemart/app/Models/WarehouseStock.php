@@ -40,7 +40,10 @@ class WarehouseStock extends Model
         'source_date',
     ];
 
-    protected $dates = ['expired_date', 'source_date'];
+    protected $casts = [
+        'expired_date' => 'datetime',
+        'source_date' => 'datetime',
+    ];
 
     /**
      * The "booted" method of the model.

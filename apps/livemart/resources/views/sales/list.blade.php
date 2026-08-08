@@ -187,6 +187,15 @@
                                                     <!-- Nomor Order hanya muncul sekali per order -->
                                                     <td class="text-center" rowspan="{{ $rowspan }}">
                                                         {{ $currentOrderNumber }}
+                                                        @if($order->hasReturns())
+                                                            <div class="mt-1">
+                                                                @if($order->isFullyReturned())
+                                                                    <span class="badge bg-danger">Retur Full</span>
+                                                                @else
+                                                                    <span class="badge bg-warning text-dark">Retur Sebagian</span>
+                                                                @endif
+                                                            </div>
+                                                        @endif
                                                     </td>
                                                 @endif
                                                 

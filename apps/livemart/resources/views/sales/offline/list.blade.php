@@ -156,7 +156,11 @@
                                 @if ($sale->status == 'cancelled')
                                     <span class="badge bg-danger">Dibatalkan</span>
                                 @elseif ($hasRetur)
-                                    <span class="badge bg-secondary">Retur</span>
+                                    @if ($hasReturFull)
+                                        <span class="badge bg-danger">Retur Full</span>
+                                    @else
+                                        <span class="badge bg-warning text-dark">Retur Sebagian</span>
+                                    @endif
                                 @elseif ($paymentStatus == 'paid')
                                     <span class="badge bg-success">Lunas</span>
                                 @elseif ($paymentStatus == 'partial')

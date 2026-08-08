@@ -246,6 +246,24 @@
                                     @endif
                                 </div>
                             </div>
+                            <div class="info-item">
+                                <div class="info-label">Retur</div>
+                                <div class="info-value">
+                                    @if ($offlineSale->hasReturFull())
+                                    <span class="status-badge bg-danger">
+                                        <i class="fas fa-undo me-1"></i>Retur Full
+                                    </span>
+                                    @elseif ($offlineSale->hasReturns())
+                                    <span class="status-badge bg-warning text-dark">
+                                        <i class="fas fa-undo me-1"></i>Retur Sebagian
+                                    </span>
+                                    @else
+                                    <span class="status-badge bg-secondary">
+                                        <i class="fas fa-minus me-1"></i>Tidak Ada
+                                    </span>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="info-item">

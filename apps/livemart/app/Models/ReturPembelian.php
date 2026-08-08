@@ -69,17 +69,50 @@ class ReturPembelian extends Model
     }
     
     /**
-     * Determine if the retur is full or partial based on returned items vs total items in PO
+     * Determine if the retur is full or partial.
+     * Konsisten dengan logika ReturPembelianController (store/update):
+     * full hanya jika semua produk di PO diretur penuh sesuai qty.
      */
     public function determineTipeRetur()
     {
         if (!$this->penerimaan_id) {
             return self::TIPE_SEBAGIAN;
         }
-        
-        $totalPenerimaanItems = PenerimaanDetail::where('penerimaan_detail.penerimaan_id', $this->penerimaan_id)->count();
-        $uniqueReturnedItems = $this->details()->distinct('retur_pembelian_details.product_id')->count('retur_pembelian_details.product_id');
-        
-        return ($uniqueReturnedItems >= $totalPenerimaanItems) ? self::TIPE_FULL : self::TIPE_SEBAGIAN;
+
+        $penerimaanDetails = PenerimaanDetail::where('penerimaan_id', $this->penerimaan_id)->get();
+        $totalPoProductsCount = $penerimaanDetails->count();
+
+        // Total qty per produk di PO
+        $poTotalQtyPerProduct = [];
+        foreach ($penerimaanDetails as $poDetail) {
+            $productId = $poDetail->product_id;
+            $poTotalQtyPerProduct[$productId] = ($poTotalQtyPerProduct[$productId] ?? 0) + (float) $poDetail->qty;
+        }
+
+        // Qty retur per produk untuk retur ini
+        $returQtyPerProduct = [];
+        $returProductCount = 0;
+        foreach ($this->details as $detail) {
+            $productId = $detail->product_id;
+            if (!isset($returQtyPerProduct[$productId])) {
+                $returQtyPerProduct[$productId] = 0;
+                $returProductCount++;
+            }
+            $returQtyPerProduct[$productId] += (float) $detail->qty;
+        }
+
+        // Full hanya jika semua produk di PO diretur penuh sesuai qty
+        $allProductsFullyReturned = true;
+        foreach ($poTotalQtyPerProduct as $productId => $totalQty) {
+            $returQty = $returQtyPerProduct[$productId] ?? 0;
+            if ($returQty < $totalQty) {
+                $allProductsFullyReturned = false;
+                break;
+            }
+        }
+
+        return ($returProductCount == $totalPoProductsCount && $allProductsFullyReturned)
+            ? self::TIPE_FULL
+            : self::TIPE_SEBAGIAN;
     }
 } 
