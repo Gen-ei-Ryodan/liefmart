@@ -253,201 +253,46 @@
                                     <tbody>
                                         @forelse($invoices as $index => $invoice)
                                         @php
+                                            // Satu sumber kebenaran untuk perhitungan nilai finansial
+                                            $calcs = \App\Services\FinanceOfflineCalculator::calculate($invoice);
+
                                             $firstItem = $invoice->barangKeluarItems->first();
-                                            $taxId = $firstItem && $firstItem->warehouseStock && $firstItem->warehouseStock->tax_id ? $firstItem->warehouseStock->tax_id : null;
-                                            
-                                            // Check if this is partial refund (nominal already includes PPN)
-                                            $isPartialRefund = $invoice->status == 'partial_refund';
-                                            
-                                            if ($isPartialRefund) {
-                                                // Nominal already includes PPN (grand total), need to reverse calculate
-                                                $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->nominal);
-                                                
-                                                if ($taxId == 3) {
-                                                    // PKP: Reverse calculate DPP from grand total
-                                                    // Grand Total = DPP + PPN
-                                                    // PPN = DPP * (11/12) * 0.12 = DPP * 0.11
-                                                    // Grand Total = DPP + DPP * 0.11 = DPP * 1.11
-                                                    // DPP = Grand Total / 1.11
-                                                    $dpp = \App\Helpers\NumberFormatter::roundToWholeNumber($grandTotal / 1.11);
-                                                    $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-                                                    $ppn = $grandTotal - $dpp;
-                                                    $ppn = \App\Helpers\NumberFormatter::roundToWholeNumber($ppn);
-                                                } else {
-                                                    // Non-PKP: No PPN, DPP = Grand Total
-                                                    $dpp = $grandTotal;
-                                                    $ppn = 0;
-                                                }
-                                            } else {
-                                                // Normal case: use nominal from DB directly (DPP)
-                                                $dpp = \App\Helpers\NumberFormatter::calculateDPP($invoice->nominal);
-                                                $ppn = 0;
-                                                $grandTotal = $dpp;
-                                                
-                                                if ($taxId == 3) {
-                                                    $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-                                                    $ppn = \App\Helpers\NumberFormatter::calculatePPN($dpp11_12);
-                                                    $grandTotal = \App\Helpers\NumberFormatter::calculateGrandTotal($dpp, $ppn);
-                                                } else {
-                                                    $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($dpp);
-                                                }
-                                            }
-                                            
-                                            $totalPaid = $invoice->payments->sum('amount');
-                                            $totalPaid = \App\Helpers\NumberFormatter::roundToWholeNumber($totalPaid);
-                                            $remainingAmount = max(0, $grandTotal - $totalPaid);
-                                            
+                                            $taxId = $calcs['tax_id'];
+                                            $dppOriginal = $calcs['dpp_original'];
+                                            $returAmount = $calcs['retur_amount'];
+                                            $netDPP = $calcs['net_dpp'];
+                                            $netPPN = $calcs['net_ppn'];
+                                            $netTotal = $calcs['net_total'];
+                                            $totalPaid = $calcs['total_paid'];
+                                            $remainingAmount = $calcs['remaining_amount'];
+                                            $isTidakBalance = $calcs['is_tidak_balance'];
+                                            $isFullyPaid = $calcs['is_fully_paid'];
+                                            $hasPartialReturn = $calcs['has_partial_return'];
+                                            $dbStatus = $calcs['db_status'];
+
                                             // Get SJ numbers, tax_id and customer
                                             $sjNumber = '-';
                                             $customer = '-';
                                             $taxBadgeClass = 'bg-secondary';
                                             $taxLabel = '-';
-                                            
+
                                             if ($firstItem) {
                                                 if ($firstItem->offlineSaleItem && $firstItem->offlineSaleItem->offlineSale) {
                                                     $sjNumber = $firstItem->offlineSaleItem->offlineSale->surat_jalan_number;
                                                     $customer = $firstItem->offlineSaleItem->offlineSale->customer_name;
                                                 }
-                                                
-                                                if ($firstItem->warehouseStock && $firstItem->warehouseStock->tax_id) {
-                                                    $taxId = $firstItem->warehouseStock->tax_id;
-                                                    
-                                                    if ($taxId == 3) {
-                                                        $taxBadgeClass = 'bg-primary';
-                                                        $taxLabel = 'PKP';
-                                                    } elseif ($taxId == 4) {
-                                                        $taxBadgeClass = 'bg-info';
-                                                        $taxLabel = 'Non-PKP';
-                                                    }
+
+                                                if ($taxId == 3) {
+                                                    $taxBadgeClass = 'bg-primary';
+                                                    $taxLabel = 'PKP';
+                                                } elseif ($taxId == 4) {
+                                                    $taxBadgeClass = 'bg-info';
+                                                    $taxLabel = 'Non-PKP';
                                                 }
                                             }
-                                            
-                                            // Get retur information and calculate amounts
-                                            $returNumbers = [];
-                                            $returAmount = 0; // Nominal yang diretur (DPP dengan diskon)
-                                            $dppOriginal = 0; // DPP original (sebelum retur) - tetap sama, tidak berubah
-                                            
-                                            // Calculate retur amount and DPP original (sebelum retur)
-                                            $offlineSale = null;
-                                            if ($firstItem && $firstItem->offlineSaleItem && $firstItem->offlineSaleItem->offlineSale) {
-                                                $offlineSale = $firstItem->offlineSaleItem->offlineSale;
-                                                
-                                                // Get all returs
-                                                $returs = \App\Models\ReturOfflineSale::where('offline_sale_id', $offlineSale->id)
-                                                    ->where('status', 'selesai')
-                                                    ->get();
-                                                
-                                                // Calculate DPP Original from quantity original (before retur)
-                                                // Only count each offline_sale_item once (same logic as recalculateNominal)
-                                                $processedSaleItemIds = [];
-                                                foreach ($invoice->barangKeluarItems as $bk) {
-                                                    if ($bk->offlineSaleItem) {
-                                                        $osi = $bk->offlineSaleItem;
-                                                        $saleItemId = $osi->id;
-                                                        
-                                                        // Only count each sale item once
-                                                        if (!in_array($saleItemId, $processedSaleItemIds)) {
-                                                            $currentQty = $osi->quantity;
-                                                            $currentSubtotal = $osi->subtotal ?? 0;
-                                                            
-                                                            // Calculate returned qty from returs
-                                                            $returnedQty = 0;
-                                                            foreach ($returs as $retur) {
-                                                                foreach ($retur->details as $detail) {
-                                                                    if ($detail->offline_sale_item_id == $osi->id) {
-                                                                        $returnedQty += $detail->qty;
-                                                                    }
-                                                                }
-                                                            }
-                                                            
-                                                            // Calculate original quantity (before retur)
-                                                            $originalQty = $currentQty + $returnedQty;
-                                                            
-                                                            // Calculate original subtotal
-                                                            if ($currentQty > 0) {
-                                                                // Calculate subtotal per unit, then multiply by original qty
-                                                                $subtotalPerUnit = $currentSubtotal / $currentQty;
-                                                                $originalSubtotal = $subtotalPerUnit * $originalQty;
-                                                            } else {
-                                                                // If current qty is 0, calculate from unit_price
-                                                                $originalSubtotal = $osi->unit_price * $originalQty;
-                                                            }
-                                                            
-                                                            $dppOriginal += $originalSubtotal;
-                                                            $processedSaleItemIds[] = $saleItemId;
-                                                        }
-                                                    }
-                                                }
-                                                
-                                                // Calculate retur amount (DPP yang diretur dengan diskon)
-                                                foreach ($returs as $retur) {
-                                                    $returNumbers[] = $retur->kode_retur;
-                                                    
-                                                    foreach ($retur->details as $detail) {
-                                                        $offlineSaleItem = $detail->offlineSaleItem;
-                                                        if ($offlineSaleItem) {
-                                                            $qtyRetur = (float)($detail->qty ?? 0);
-                                                            $basePrice = (float)($offlineSaleItem->unit_price ?? 0);
-                                                            
-                                                            // Start with base total (price × qty retur)
-                                                            $currentTotal = $basePrice * $qtyRetur;
-                                                            
-                                                            // Apply percentage discounts (1-5) in cascading order
-                                                            for($i = 1; $i <= 5; $i++) {
-                                                                $percentField = "discount_percent_" . $i;
-                                                                $discountPercent = (float)($offlineSaleItem->$percentField ?? 0);
-                                                                if($discountPercent > 0) {
-                                                                    $currentTotal = \App\Helpers\NumberFormatter::calculatePercentageDiscount($currentTotal, $discountPercent);
-                                                                }
-                                                            }
-                                                            
-                                                            // Apply nominal discounts (1-5) in cascading order
-                                                            for($i = 1; $i <= 5; $i++) {
-                                                                $amountField = "discount_amount_" . $i;
-                                                                $discountAmount = (float)($offlineSaleItem->$amountField ?? 0);
-                                                                if($discountAmount > 0) {
-                                                                    $currentTotal = \App\Helpers\NumberFormatter::calculateNominalDiscount($currentTotal, $discountAmount * $qtyRetur);
-                                                                }
-                                                            }
-                                                            
-                                                            // Add to retur amount (already includes discounts)
-                                                            $returAmount += \App\Helpers\NumberFormatter::formatForDatabase($currentTotal);
-                                                        }
-                                                    }
-                                                }
-                                            } else {
-                                                // If no offline sale, use nominal from DB directly (DPP)
-                                                // This is for backward compatibility
-                                                $dppOriginal = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->nominal);
-                                            }
-                                            
-                                            // Round amounts
-                                            $dppOriginal = \App\Helpers\NumberFormatter::roundToWholeNumber($dppOriginal);
-                                            $returAmount = \App\Helpers\NumberFormatter::roundToWholeNumber($returAmount);
-                                            
-                                            // NET = DPP setelah retur = DPP original - RETUR
-                                            $netDPP = max(0, $dppOriginal - $returAmount);
-                                            $netDPP = \App\Helpers\NumberFormatter::roundToWholeNumber($netDPP);
-                                            
-                                            // PPN dari NET
-                                            $netPPN = 0;
-                                            if ($taxId == 3) {
-                                                $netDPP11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($netDPP);
-                                                $netPPN = \App\Helpers\NumberFormatter::calculatePPN($netDPP11_12);
-                                                $netPPN = \App\Helpers\NumberFormatter::roundToWholeNumber($netPPN);
-                                            }
-                                            
-                                            // Total = NET + PPN
-                                            $netTotal = $netDPP + $netPPN;
-                                            $netTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($netTotal);
-                                            
-                                            // Update remaining amount based on net total
-                                            $remainingAmount = max(0, $netTotal - $totalPaid);
-                                            
-                                            $dbStatus = $invoice->status ?? 'unpaid';
-                                            
+
                                             // Jika status refunded/retur_full, force semua nilai finansial ke 0
-                                            if ($dbStatus == 'refunded' || $dbStatus == 'retur_full') {
+                                            if ($calcs['is_retur_full']) {
                                                 $dppOriginal = 0;
                                                 $returAmount = 0;
                                                 $netDPP = 0;
@@ -456,14 +301,8 @@
                                                 $remainingAmount = 0;
                                                 $totalPaid = 0;
                                             }
-                                            
-                                            $isTidakBalance = ($totalPaid > $netTotal && $totalPaid > 0 && $dbStatus != 'refunded' && $dbStatus != 'retur_full');
-                                            $isFullyPaid = ($remainingAmount == 0 && $dbStatus != 'refunded' && $dbStatus != 'retur_full');
-                                            
-                                            // Check if there's a partial return for display
-                                            $hasPartialReturn = $returAmount > 0 && $dbStatus != 'refunded' && $invoice->nominal > 0;
-                                            
-                                            if ($dbStatus == 'refunded' || $dbStatus == 'retur_full') {
+
+                                            if ($calcs['is_retur_full']) {
                                                 $statusBadgeClass = 'bg-secondary';
                                                 $statusLabel = 'Retur Full';
                                             } elseif ($isFullyPaid) {
@@ -574,206 +413,51 @@
 <!-- Modal section - place these outside the table but within the main container div -->
 @forelse($invoices as $invoice)
 @php
+    // Satu sumber kebenaran untuk perhitungan nilai finansial
+    $calcs = \App\Services\FinanceOfflineCalculator::calculate($invoice);
+
     $firstItem = $invoice->barangKeluarItems->first();
-    $taxId = $firstItem && $firstItem->warehouseStock && $firstItem->warehouseStock->tax_id ? $firstItem->warehouseStock->tax_id : null;
-    
-    // Check if this is partial refund (nominal already includes PPN)
-    $isPartialRefund = $invoice->status == 'partial_refund';
-    
-    if ($isPartialRefund) {
-        // Nominal already includes PPN (grand total), need to reverse calculate
-        $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->nominal);
-        
-        if ($taxId == 3) {
-            // PKP: Reverse calculate DPP from grand total
-            // Grand Total = DPP + PPN
-            // PPN = DPP * (11/12) * 0.12 = DPP * 0.11
-            // Grand Total = DPP + DPP * 0.11 = DPP * 1.11
-            // DPP = Grand Total / 1.11
-            $dpp = \App\Helpers\NumberFormatter::roundToWholeNumber($grandTotal / 1.11);
-            $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-            $ppn = $grandTotal - $dpp;
-            $ppn = \App\Helpers\NumberFormatter::roundToWholeNumber($ppn);
-        } else {
-            // Non-PKP: No PPN, DPP = Grand Total
-            $dpp = $grandTotal;
-            $dpp11_12 = 0;
-            $ppn = 0;
-        }
-    } else {
-        // Normal case: use nominal from DB directly (DPP)
-        $dpp = \App\Helpers\NumberFormatter::calculateDPP($invoice->nominal);
-        $ppn = 0;
-        $grandTotal = $dpp;
-        
-        if ($taxId == 3) {
-            $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-            $ppn = \App\Helpers\NumberFormatter::calculatePPN($dpp11_12);
-            $grandTotal = \App\Helpers\NumberFormatter::calculateGrandTotal($dpp, $ppn);
-        } else {
-            $dpp11_12 = 0;
-            $ppn = 0;
-            $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($dpp);
-        }
-    }
-    
-    $totalPaid = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->payments->sum('amount'));
-    $remainingAmount = max(0, $grandTotal - $totalPaid);
-    
+    $taxId = $calcs['tax_id'];
+    $netTotalModal = $calcs['net_total'];
+    $totalPaid = $calcs['total_paid'];
+    $remainingAmount = $calcs['remaining_amount'];
+    $isTidakBalance = $calcs['is_tidak_balance'];
+    $paymentAdjustmentNeeded = $isTidakBalance ? ($totalPaid - $netTotalModal) : 0;
+    $isFullyPaidModal = $calcs['is_fully_paid'];
+    $hasPartialReturnModal = $calcs['has_partial_return'];
+    $dbStatusModal = $calcs['db_status'];
+
     // Get SJ numbers, tax_id and customer
     $sjNumber = '-';
     $customer = '-';
     $taxBadgeClass = 'bg-secondary';
     $taxLabel = '-';
-    
+
     if ($firstItem) {
         if ($firstItem->offlineSaleItem && $firstItem->offlineSaleItem->offlineSale) {
             $sjNumber = $firstItem->offlineSaleItem->offlineSale->surat_jalan_number;
             $customer = $firstItem->offlineSaleItem->offlineSale->customer_name;
         }
-        
-        if ($firstItem->warehouseStock && $firstItem->warehouseStock->tax_id) {
-            $taxId = $firstItem->warehouseStock->tax_id;
-            
-            if ($taxId == 3) {
-                $taxBadgeClass = 'bg-primary';
-                $taxLabel = 'PKP';
-            } elseif ($taxId == 4) {
-                $taxBadgeClass = 'bg-info';
-                $taxLabel = 'Non-PKP';
-            }
+
+        if ($taxId == 3) {
+            $taxBadgeClass = 'bg-primary';
+            $taxLabel = 'PKP';
+        } elseif ($taxId == 4) {
+            $taxBadgeClass = 'bg-info';
+            $taxLabel = 'Non-PKP';
         }
     }
-    
-    // Calculate net total for modal (same logic as in table)
-    // Use nominal from DB directly
-    $returAmountModal = 0;
-    
-    // Calculate retur amount (DPP yang diretur dengan diskon)
-    $offlineSaleModal = null;
-    $retursModal = collect();
-    if ($firstItem && $firstItem->offlineSaleItem && $firstItem->offlineSaleItem->offlineSale) {
-        $offlineSaleModal = $firstItem->offlineSaleItem->offlineSale;
-        
-        // Get all returs
-        $retursModal = \App\Models\ReturOfflineSale::where('offline_sale_id', $offlineSaleModal->id)
-            ->where('status', 'selesai')
-            ->get();
-        
-        $dppOriginalModal = 0;
-        $processedSaleItemIds = [];
-        foreach ($invoice->barangKeluarItems as $bk) {
-            if ($bk->offlineSaleItem) {
-                $osi = $bk->offlineSaleItem;
-                $saleItemId = $osi->id;
-                
-                if (!in_array($saleItemId, $processedSaleItemIds)) {
-                    $currentQty = $osi->quantity;
-                    $currentSubtotal = $osi->subtotal ?? 0;
-                    
-                    $returnedQty = 0;
-                    foreach ($retursModal as $retur) {
-                        foreach ($retur->details as $detail) {
-                            if ($detail->offline_sale_item_id == $osi->id) {
-                                $returnedQty += $detail->qty;
-                            }
-                        }
-                    }
-                    
-                    $originalQty = $currentQty + $returnedQty;
-                    
-                    if ($currentQty > 0) {
-                        $subtotalPerUnit = $currentSubtotal / $currentQty;
-                        $originalSubtotal = $subtotalPerUnit * $originalQty;
-                    } else {
-                        $originalSubtotal = $osi->unit_price * $originalQty;
-                    }
-                    
-                    $dppOriginalModal += $originalSubtotal;
-                    $processedSaleItemIds[] = $saleItemId;
-                }
-            }
-        }
-        
-        foreach ($retursModal as $retur) {
-            foreach ($retur->details as $detail) {
-                $offlineSaleItem = $detail->offlineSaleItem;
-                if ($offlineSaleItem) {
-                    $qtyRetur = (float)($detail->qty ?? 0);
-                    $basePrice = (float)($offlineSaleItem->unit_price ?? 0);
-                    
-                    // Start with base total (price × qty retur)
-                    $currentTotal = $basePrice * $qtyRetur;
-                    
-                    // Apply percentage discounts (1-5) in cascading order
-                    for($i = 1; $i <= 5; $i++) {
-                        $percentField = "discount_percent_" . $i;
-                        $discountPercent = (float)($offlineSaleItem->$percentField ?? 0);
-                        if($discountPercent > 0) {
-                            $currentTotal = \App\Helpers\NumberFormatter::calculatePercentageDiscount($currentTotal, $discountPercent);
-                        }
-                    }
-                    
-                    // Apply nominal discounts (1-5) in cascading order
-                    for($i = 1; $i <= 5; $i++) {
-                        $amountField = "discount_amount_" . $i;
-                        $discountAmount = (float)($offlineSaleItem->$amountField ?? 0);
-                        if($discountAmount > 0) {
-                            $currentTotal = \App\Helpers\NumberFormatter::calculateNominalDiscount($currentTotal, $discountAmount * $qtyRetur);
-                        }
-                    }
-                    
-                    // Add to retur amount (already includes discounts)
-                    $returAmountModal += \App\Helpers\NumberFormatter::formatForDatabase($currentTotal);
-                }
-            }
-        }
-    } else {
-        $dppOriginalModal = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->nominal);
-    }
-    
-    // Round amounts
-    $dppOriginalModal = \App\Helpers\NumberFormatter::roundToWholeNumber($dppOriginalModal);
-    $returAmountModal = \App\Helpers\NumberFormatter::roundToWholeNumber($returAmountModal);
-    $netDPPModal = max(0, $dppOriginalModal - $returAmountModal);
-    $netDPPModal = \App\Helpers\NumberFormatter::roundToWholeNumber($netDPPModal);
-    
-    $netPPNModal = 0;
-    if ($taxId == 3) {
-        $netDPP11_12Modal = \App\Helpers\NumberFormatter::calculateDPP1112($netDPPModal);
-        $netPPNModal = \App\Helpers\NumberFormatter::calculatePPN($netDPP11_12Modal);
-        $netPPNModal = \App\Helpers\NumberFormatter::roundToWholeNumber($netPPNModal);
-    }
-    
-    $netTotalModal = $netDPPModal + $netPPNModal;
-    $netTotalModal = \App\Helpers\NumberFormatter::roundToWholeNumber($netTotalModal);
-    
-    $remainingAmount = max(0, $netTotalModal - $totalPaid);
-    
-    // Check if there's payment adjustment needed (tidak balance)
-    $isTidakBalance = $totalPaid > $netTotalModal;
-    $paymentAdjustmentNeeded = $isTidakBalance ? ($totalPaid - $netTotalModal) : 0;
-    
-    $dbStatusModal = $invoice->status ?? 'unpaid';
-    
+
     // Jika status refunded/retur_full, force semua nilai finansial ke 0
-    if ($dbStatusModal == 'refunded' || $dbStatusModal == 'retur_full') {
-        $dppOriginalModal = 0;
-        $returAmountModal = 0;
-        $netDPPModal = 0;
-        $netPPNModal = 0;
+    if ($calcs['is_retur_full']) {
         $netTotalModal = 0;
-        $remainingAmount = 0;
         $totalPaid = 0;
+        $remainingAmount = 0;
+        $paymentAdjustmentNeeded = 0;
+        $isTidakBalance = false;
     }
-    
-    $isTidakBalance = ($totalPaid > $netTotalModal && $totalPaid > 0 && $dbStatusModal != 'refunded' && $dbStatusModal != 'retur_full');
-    $isFullyPaidModal = ($remainingAmount == 0 && $dbStatusModal != 'refunded' && $dbStatusModal != 'retur_full');
-    
-    // Check if there's a partial return for display
-    $hasPartialReturnModal = $returAmountModal > 0 && $dbStatusModal != 'refunded' && $invoice->nominal > 0;
-    
-    if ($dbStatusModal == 'refunded' || $dbStatusModal == 'retur_full') {
+
+    if ($calcs['is_retur_full']) {
         $statusBadgeClass = 'bg-secondary';
         $statusLabel = 'Retur Full';
     } elseif ($isFullyPaidModal) {

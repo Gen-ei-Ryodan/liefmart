@@ -140,71 +140,13 @@
             $offlineSale = $firstItem && $firstItem->offlineSaleItem ? $firstItem->offlineSaleItem->offlineSale : null;
             $customer = $offlineSale && $offlineSale->customerInfo ? $offlineSale->customerInfo->name : ($offlineSale ? $offlineSale->customer_name : 'N/A');
             $sjNumber = $offlineSale ? $offlineSale->surat_jalan_number : 'N/A';
-            $saleDate = $offlineSale ? $offlineSale->sale_date->format('d-M-Y') : 'N/A';
-            
-            $taxId = $firstItem && $firstItem->warehouseStock && $firstItem->warehouseStock->tax_id ? $firstItem->warehouseStock->tax_id : null;
-            $dbStatus = $invoice->status ?? 'unpaid';
-            $totalPaid = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->payments->sum('amount'));
-            
-            $dppOriginal = \App\Helpers\NumberFormatter::roundToWholeNumber($invoice->nominal);
-            $returAmount = 0;
-            
-            if ($offlineSale) {
-                $returs = \App\Models\ReturOfflineSale::where('offline_sale_id', $offlineSale->id)
-                    ->where('status', 'selesai')
-                    ->get();
-                
-                foreach ($returs as $retur) {
-                    foreach ($retur->details as $detail) {
-                        $offlineSaleItem = $detail->offlineSaleItem;
-                        if ($offlineSaleItem) {
-                            $qtyRetur = (float)($detail->qty ?? 0);
-                            $basePrice = (float)($offlineSaleItem->unit_price ?? 0);
-                            
-                            $currentTotal = $basePrice * $qtyRetur;
-                            
-                            for ($i = 1; $i <= 5; $i++) {
-                                $percentField = "discount_percent_" . $i;
-                                $discountPercent = (float)($offlineSaleItem->$percentField ?? 0);
-                                if ($discountPercent > 0) {
-                                    $currentTotal = \App\Helpers\NumberFormatter::calculatePercentageDiscount($currentTotal, $discountPercent);
-                                }
-                            }
-                            
-                            for ($i = 1; $i <= 5; $i++) {
-                                $amountField = "discount_amount_" . $i;
-                                $discountAmount = (float)($offlineSaleItem->$amountField ?? 0);
-                                if ($discountAmount > 0) {
-                                    $currentTotal = \App\Helpers\NumberFormatter::calculateNominalDiscount($currentTotal, $discountAmount * $qtyRetur);
-                                }
-                            }
-                            
-                            $returAmount += \App\Helpers\NumberFormatter::formatForDatabase($currentTotal);
-                        }
-                    }
-                }
-            }
-            
-            $returAmount = \App\Helpers\NumberFormatter::roundToWholeNumber($returAmount);
-            $netDPP = max(0, $dppOriginal - $returAmount);
-            $netDPP = \App\Helpers\NumberFormatter::roundToWholeNumber($netDPP);
-            
-            $netPPN = 0;
-            if ($taxId == 3) {
-                $netDPP11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($netDPP);
-                $netPPN = \App\Helpers\NumberFormatter::calculatePPN($netDPP11_12);
-                $netPPN = \App\Helpers\NumberFormatter::roundToWholeNumber($netPPN);
-            }
-            
-            $netTotal = $netDPP + $netPPN;
-            $netTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($netTotal);
-            $remainingAmount = max(0, $netTotal - $totalPaid);
-            
-            if ($dbStatus == 'refunded' || $dbStatus == 'retur_full') {
-                $statusBayar = 'RETUR FULL';
-            } else {
-                $statusBayar = $remainingAmount == 0 ? 'LUNAS' : 'BELUM LUNAS';
-            }
+
+            // Satu sumber kebenaran untuk perhitungan nilai finansial
+            $calcs = \App\Services\FinanceOfflineCalculator::calculate($invoice);
+
+            $statusBayar = $calcs['is_retur_full']
+                ? 'RETUR FULL'
+                : ($calcs['remaining_amount'] == 0 ? 'LUNAS' : 'BELUM LUNAS');
         @endphp
         
         <div class="invoice-info">
