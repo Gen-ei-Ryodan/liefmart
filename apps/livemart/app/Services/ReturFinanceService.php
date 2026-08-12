@@ -69,6 +69,166 @@ class ReturFinanceService
     }
     
     /**
+     * Restore finance logic for online return (kebalikan dari handleOnlineReturFinance).
+     * Dipanggil saat retur penjualan yang sudah selesai dibatalkan (reverseReturn),
+     * setelah quantity order item dan stock sudah dikembalikan.
+     *
+     * @param ReturPenjualan $returPenjualan
+     * @return void
+     */
+    public function restoreOnlineReturFinance(ReturPenjualan $returPenjualan)
+    {
+        $order = $returPenjualan->order;
+        if (!$order) {
+            return;
+        }
+
+        $platform = $this->normalizePlatform(strtolower($order->platform->name ?? ''));
+        if (!in_array($platform, ['shopee', 'shopee2', 'tiktok', 'tiktok2'])) {
+            return;
+        }
+
+        if (!$order->relationLoaded('orderItems')) {
+            $order->load('orderItems');
+        }
+
+        $transaction = $this->getFinanceTransaction($order, $platform);
+
+        if ($transaction) {
+            $this->restoreTransactionFromOrder($transaction, $order);
+        } else {
+            $this->recreateTransactionFromOrder($order, $platform);
+        }
+    }
+
+    /**
+     * Get financial transaction instance for the given order and platform
+     */
+    private function getFinanceTransaction(Order $order, string $platform)
+    {
+        switch ($platform) {
+            case 'shopee':
+                return ShopeeFinancialTransaction::where('order_id', $order->id)->first();
+            case 'shopee2':
+                return Shopee2FinancialTransaction::where('order_id', $order->id)->first();
+            case 'tiktok':
+                return TiktokFinancialTransaction::where('order_id', $order->id)->first();
+            case 'tiktok2':
+                return Tiktok2FinancialTransaction::where('order_id', $order->id)->first();
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Restore a still-existing transaction (partial refund case) to its original values
+     */
+    private function restoreTransactionFromOrder($transaction, Order $order)
+    {
+        try {
+            DB::beginTransaction();
+
+            $nominalHarga = $order->orderItems->sum(function ($item) {
+                return $item->price_after_discount * $item->quantity;
+            });
+            $qty = $order->orderItems->sum('quantity');
+
+            $discounts = [];
+            for ($i = 1; $i <= 12; $i++) {
+                $percentCol = "persentase_diskon{$i}";
+                $nominalCol = "nominal_diskon{$i}";
+                $percent = (float) ($transaction->$percentCol ?? 0);
+                if ($percent > 0) {
+                    $discounts[$nominalCol] = -abs($nominalHarga * ($percent / 100));
+                }
+            }
+
+            $nominalFix = $nominalHarga;
+            foreach ($discounts as $discount) {
+                $nominalFix += $discount;
+            }
+            $nominalFix += ($transaction->adjustment ?? 0);
+            $nominalFix = max(0, $nominalFix);
+
+            $outstanding = $nominalFix - ($transaction->saldo_masuk ?? 0);
+
+            $desc = (string) ($transaction->adjustment_description ?? '');
+            $desc = preg_replace('/ \| Retur (sebagian|penuh).*$/u', '', $desc);
+
+            $updateData = array_merge($discounts, [
+                'nominal_harga' => $nominalHarga,
+                'nominal_fix' => $nominalFix,
+                'qty' => $qty,
+                'outstanding' => $outstanding,
+                'adjustment_description' => $desc,
+            ]);
+
+            $model = get_class($transaction);
+            $model::where('order_id', $order->id)->update($updateData);
+
+            Log::info("Restored financial transaction for reversed retur order {$order->order_number}", $updateData);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error restoring financial transaction: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Recreate a deleted transaction (full refund case) from the restored order
+     */
+    private function recreateTransactionFromOrder(Order $order, string $platform)
+    {
+        try {
+            DB::beginTransaction();
+
+            $transaction = null;
+            switch ($platform) {
+                case 'shopee':
+                    $transaction = new ShopeeFinancialTransaction();
+                    break;
+                case 'shopee2':
+                    $transaction = new Shopee2FinancialTransaction();
+                    break;
+                case 'tiktok':
+                    $transaction = new TiktokFinancialTransaction();
+                    break;
+                case 'tiktok2':
+                    $transaction = new Tiktok2FinancialTransaction();
+                    break;
+            }
+
+            if (!$transaction) {
+                DB::rollBack();
+                return;
+            }
+
+            $transaction->setDataFromOrder($order);
+            $transaction->calculateNominalFix();
+            // PERBAIKAN: saldo_masuk wajib diisi (kolom NOT NULL tanpa default).
+            // Transaksi dibuat ulang setelah retur penuh dibatalkan => dimulai sebagai belum dibayar.
+            $transaction->saldo_masuk = 0;
+            $transaction->calculateOutstanding();
+            $transaction->adjustment_description = 'Transaksi dibuat ulang setelah retur dibatalkan';
+            $transaction->save();
+
+            Log::info("Recreated financial transaction for reversed retur order {$order->order_number}", [
+                'nominal_harga' => $transaction->nominal_harga,
+                'nominal_fix' => $transaction->nominal_fix,
+                'outstanding' => $transaction->outstanding,
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error recreating financial transaction: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Handle finance logic for offline return
      * 
      * @param ReturOfflineSale $returOfflineSale

@@ -59,7 +59,11 @@ class SalesExportMappedExport implements FromIterator, WithHeadings, ShouldAutoS
                         'orderItems.platformProduct' => function($query) {
                             $query->select('id', 'platform_product_name', 'variant');
                         },
-                        'orderItems.returPenjualanDetails',
+                        'orderItems.returPenjualanDetails' => function($query) {
+                            $query->whereHas('returPenjualan', function($q) {
+                                $q->whereIn('status', ['draft', 'selesai']);
+                            });
+                        },
                         'platform' => function($query) {
                             $query->select('id', 'name');
                         }
@@ -103,6 +107,10 @@ class SalesExportMappedExport implements FromIterator, WithHeadings, ShouldAutoS
                         }
                         
                         if ($mappings->count() > 0) {
+                            // PERBAIKAN: Konversi qty retur individual ke satuan paket agar konsisten dengan view
+                            $packageQuantityRetur = $mappings->sum('quantity');
+                            $qtyRetur = $packageQuantityRetur > 0 ? round($item->returPenjualanDetails->sum('qty') / $packageQuantityRetur, 4) : $item->returPenjualanDetails->sum('qty');
+
                             foreach ($mappings as $mapping) {
                                 yield [
                                     'No' => $no,
@@ -113,7 +121,7 @@ class SalesExportMappedExport implements FromIterator, WithHeadings, ShouldAutoS
                                     'Nama Barang (Platform)' => $item->platformProduct ? $item->platformProduct->platform_product_name : '-',
                                     'Varian' => $item->platformProduct ? $item->platformProduct->variant : '-',
                                     'Qty (Platform)' => $item->quantity,
-                                    'Qty Retur' => $item->returPenjualanDetails->sum('qty'),
+                                    'Qty Retur' => $qtyRetur,
                                     'Harga' => $item->price_after_discount,
                                     'Total Item' => $item->price_after_discount * $item->quantity,
                                     'Nama Barang (Internal)' => $mapping->product ? $mapping->product->name : 'Product Not Found',
@@ -125,6 +133,8 @@ class SalesExportMappedExport implements FromIterator, WithHeadings, ShouldAutoS
                                 ];
                             }
                         } else {
+                            $qtyRetur = $item->returPenjualanDetails->sum('qty');
+
                             yield [
                                 'No' => $no,
                                 'Tanggal' => $order->tanggal ? Carbon::parse($order->tanggal)->format('d-m-Y') : '-',
@@ -134,7 +144,7 @@ class SalesExportMappedExport implements FromIterator, WithHeadings, ShouldAutoS
                                 'Nama Barang (Platform)' => $item->platformProduct ? $item->platformProduct->platform_product_name : '-',
                                 'Varian' => $item->platformProduct ? $item->platformProduct->variant : '-',
                                 'Qty (Platform)' => $item->quantity,
-                                'Qty Retur' => $item->returPenjualanDetails->sum('qty'),
+                                'Qty Retur' => $qtyRetur,
                                 'Harga' => $item->price_after_discount,
                                 'Total Item' => $item->price_after_discount * $item->quantity,
                                 'Nama Barang (Internal)' => 'No Mapping',

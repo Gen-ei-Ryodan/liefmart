@@ -545,10 +545,12 @@ class SalesController extends Controller
             $qtyToReduce = $quantity * $mapping->quantity;
             
             // Ambil stok produk dari warehouse berdasarkan FIFO + prioritas HGN
+            // PERBAIKAN: lockForUpdate() mencegah race condition saat 2 order diproses bersamaan
             $stocks = WarehouseStock::where('product_id', $mapping->product_id)
                 ->where('qty', '>', 0)
                 ->orderBy('created_at') // Layer 1: FIFO berdasarkan tanggal penerimaan
                 ->orderBy('tax_id', 'asc') // Layer 2: HGN (tax_id=3) dulu, baru LM (tax_id=4)
+                ->lockForUpdate()
                 ->get();
             
             // Hitung total stok tersedia
@@ -1075,10 +1077,12 @@ class SalesController extends Controller
                 $product = Product::findOrFail($productId);
                 
                 // Get all available warehouse stocks for this product
+                // PERBAIKAN: lockForUpdate() mencegah race condition saat 2 penjualan berjalan bersamaan
                 $warehouseStocks = WarehouseStock::where('product_id', $productId)
                     ->where('qty', '>', 0)
                     ->orderBy('created_at')   // Layer 1: FIFO berdasarkan tanggal penerimaan
                     ->orderBy('tax_id', 'asc') // Layer 2: HGN (tax_id=3) dulu, baru LM (tax_id=4)
+                    ->lockForUpdate()
                     ->get();
                 
                 if ($warehouseStocks->isEmpty()) {

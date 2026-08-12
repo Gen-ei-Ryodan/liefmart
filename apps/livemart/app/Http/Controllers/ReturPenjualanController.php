@@ -953,6 +953,11 @@ class ReturPenjualanController extends Controller
                 }
             }
 
+            // Restore finance transaction (kebalikan dari handleOnlineReturFinance)
+            // Dipanggil setelah qty & stock direstore agar nilai dihitung dari quantity asli
+            $financeService = new ReturFinanceService();
+            $financeService->restoreOnlineReturFinance($returPenjualan);
+
             // Update status to 'dibatalkan'
             $returPenjualan->update([
                 'status' => 'dibatalkan',

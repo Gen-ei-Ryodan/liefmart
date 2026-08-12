@@ -701,6 +701,7 @@ class ReturPembelianController extends Controller
             ->where('warehouse_stock.penerimaan_detail_id', $penerimaanDetailId)
             ->where('warehouse_stock.qty', '>', 0)
             ->orderBy('warehouse_stock.created_at', 'asc')    // FIFO berdasarkan tanggal penerimaan
+            ->lockForUpdate()
             ->get();
             
         if ($warehouseStocks->isEmpty()) {

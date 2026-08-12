@@ -58,6 +58,16 @@ class Shopee2FinanceAnalyticsExport implements FromCollection, WithHeadings, Wit
             }
         }
 
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
+            });
+        });
+
         return $query->orderBy('tanggal_order', 'desc')
             ->orderBy('no_order', 'desc')
             ->get();

@@ -17,6 +17,8 @@ use App\Exports\TiktokFinanceAnalyticsExport;
 use App\Exports\TiktokCashFlowExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\AdjustmentHistory;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranTiktokController extends Controller
 {
@@ -122,45 +124,37 @@ class PembayaranTiktokController extends Controller
             }
         }
         
-        // Exclude only fully returned orders (retur full), not partial returns (retur sebagian)
-        // Orders with partial returns should still appear in finance index
-        $query->whereNotExists(function($subQuery) {
-            $subQuery->select(DB::raw(1))
-                ->from('retur_penjualans as rp')
-                ->join('orders as o', 'rp.order_id', '=', 'o.id')
-                ->join('retur_penjualan_details as rpd', 'rp.id', '=', 'rpd.retur_penjualan_id')
-                ->join('order_items as oi', 'rpd.order_item_id', '=', 'oi.id')
-                ->whereColumn('o.order_number', 'tiktok_financial_transactions.no_order')
-                ->whereIn('rp.status', ['draft', 'selesai'])
-                ->whereNotNull('o.order_number')
-                ->where('o.order_number', '!=', '')
-                ->groupBy('o.id')
-                ->havingRaw('SUM(rpd.qty) >= (
-                    SELECT COALESCE(SUM(oi2.quantity * COALESCE((
-                        SELECT SUM(mb.quantity)
-                        FROM mapping_barangs mb
-                        WHERE mb.platform_product_id = oi2.platform_product_id
-                          AND mb.is_active = 1
-                    ), 1)), 0)
-                    FROM order_items oi2
-                    WHERE oi2.order_id = o.id
-                )');
+        // Get all transactions matching the query (without pagination yet)
+        $allTransactions = $query->orderBy('tiktok_financial_transactions.tanggal_order', 'desc')->get();
+
+        // Filter out fully returned orders (retur full), keep partial returns (retur sebagian)
+        // Uses Order::isFullyReturned() for consistent logic across all platforms
+        $filteredCollection = $allTransactions->filter(function($transaction) {
+            if ($transaction->order && $transaction->order->isFullyReturned()) {
+                return false;
+            }
+            return true;
         });
-        
-        // Calculate totals for cards from FILTERED data - use table alias
-        $totalCount = $query->count();
-        $totalNominalFix = $query->sum('tiktok_financial_transactions.nominal_fix');
-        $totalSaldoMasuk = $query->sum('tiktok_financial_transactions.saldo_masuk');
-        $totalOutstanding = $query->sum('tiktok_financial_transactions.outstanding');
-        
-        // Clone query for pagination (this will be filtered)
-        $transactions = clone $query;
-        $transactions = $transactions->orderBy('tiktok_financial_transactions.tanggal_order', 'desc')
-            ->paginate(15)
-            ->withQueryString(); // Preserves query parameters in pagination links
+
+        // Calculate totals for cards from FILTERED data (after fully-returned filter)
+        $totalCount = $filteredCollection->count();
+        $totalNominalFix = $filteredCollection->sum('nominal_fix');
+        $totalSaldoMasuk = $filteredCollection->sum('saldo_masuk');
+        $totalOutstanding = $filteredCollection->sum('outstanding');
+
+        // Paginate the filtered results for display
+        $perPage = 15;
+        $currentPage = Paginator::resolveCurrentPage('page');
+        $transactions = new LengthAwarePaginator(
+            $filteredCollection->forPage($currentPage, $perPage)->values(),
+            $filteredCollection->count(),
+            $perPage,
+            $currentPage,
+            ['path' => Paginator::resolveCurrentPath()]
+        );
             
         // Group transactions by order number for display
-        $groupedTransactions = $transactions->groupBy('no_order');
+        $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
         
         // Get unpaid orders with optimized SQL query
         // Calculate total_value and days_since_order directly in SQL
@@ -187,26 +181,16 @@ class PembayaranTiktokController extends Controller
             ->leftJoin('order_items', 'orders.id', '=', 'order_items.order_id')
             ->whereDoesntHave('tiktokFinancialTransactions')
             ->where('orders.platform_id', $platformId)
-            ->whereRaw('NOT EXISTS (
-                SELECT 1 FROM retur_penjualan_details rpd
-                INNER JOIN retur_penjualans rp ON rpd.retur_penjualan_id = rp.id
-                INNER JOIN order_items oi ON rpd.order_item_id = oi.id
-                WHERE oi.order_id = orders.id
-                AND rp.status IN ("draft", "selesai")
-                GROUP BY oi.order_id
-                HAVING SUM(rpd.qty) >= (
-                    SELECT COALESCE(SUM(oi2.quantity * COALESCE((
-                        SELECT SUM(mb.quantity)
-                        FROM mapping_barangs mb
-                        WHERE mb.platform_product_id = oi2.platform_product_id
-                          AND mb.is_active = 1
-                    ), 1)), 0)
-                    FROM order_items oi2
-                    WHERE oi2.order_id = orders.id
-                )
-            )')
-            ->groupBy('orders.id', 'orders.order_number', 'orders.tanggal', 'orders.status')
-            ->havingRaw('(returned_quantity < order_total_quantity OR returned_quantity = 0)');
+            // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+            // Fully returned = all remaining order-item qty == 0 AND has retur (draft/selesai)
+            ->where(function($q) {
+                $q->whereHas('orderItems', function($itemQuery) {
+                    $itemQuery->where('quantity', '>', 0);
+                })->orWhereDoesntHave('returPenjualan', function($returQuery) {
+                    $returQuery->whereIn('status', ['draft', 'selesai']);
+                });
+            })
+            ->groupBy('orders.id', 'orders.order_number', 'orders.tanggal', 'orders.status');
         
         // Apply filters for unpaid orders
         $fromUnpaidDate = $request->filled('from_order_date') ? $request->from_order_date : $request->from_date;
@@ -326,26 +310,19 @@ class PembayaranTiktokController extends Controller
                     SELECT 1 FROM tiktok_financial_transactions 
                     WHERE tiktok_financial_transactions.order_id = orders.id
                 )
-                AND NOT EXISTS (
-                    SELECT 1 FROM retur_penjualan_details rpd
-                    INNER JOIN retur_penjualans rp ON rpd.retur_penjualan_id = rp.id
-                    INNER JOIN order_items oi ON rpd.order_item_id = oi.id
-                    WHERE oi.order_id = orders.id
-                    AND rp.status IN ('draft', 'selesai')
-                    GROUP BY oi.order_id
-                    HAVING SUM(rpd.qty) >= (
-                        SELECT COALESCE(SUM(oi2.quantity * COALESCE((
-                            SELECT SUM(mb.quantity)
-                            FROM mapping_barangs mb
-                            WHERE mb.platform_product_id = oi2.platform_product_id
-                              AND mb.is_active = 1
-                        ), 1)), 0)
-                        FROM order_items oi2
-                        WHERE oi2.order_id = orders.id
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM order_items oi3
+                        WHERE oi3.order_id = orders.id
+                        AND oi3.quantity > 0
+                    )
+                    OR NOT EXISTS (
+                        SELECT 1 FROM retur_penjualans rp2
+                        WHERE rp2.order_id = orders.id
+                        AND rp2.status IN ('draft', 'selesai')
                     )
                 )
                 GROUP BY orders.id, orders.order_number, orders.tanggal
-                HAVING (returned_quantity < order_total_quantity OR returned_quantity = 0)
             ) as unpaid_orders
             WHERE 1=1
             {$unpaidOuterFilter}
@@ -1128,6 +1105,15 @@ class PembayaranTiktokController extends Controller
                     if (!$order) {
                         $skippedCount++;
                         $skippedReasons[] = "Row #$index: Order {$rowData['NOMOR PESANAN']} not found";
+                        continue;
+                    }
+
+                    // PERBAIKAN: Skip order yang sudah diretur penuh (retur draft/selesai)
+                    // agar transaksi finance tidak dibuat setelah retur full diproses
+                    if ($order->isFullyReturned()) {
+                        $skippedCount++;
+                        $skippedReasons[] = "Row #$index: Order {$rowData['NOMOR PESANAN']} sudah diretur penuh";
+                        \Log::warning("Skipping order {$rowData['NOMOR PESANAN']} - order is fully returned");
                         continue;
                     }
                     
@@ -2142,13 +2128,13 @@ class PembayaranTiktokController extends Controller
             }
         }
         
-        // Exclude transactions with fully returned orders at query level
-        $query->whereHas('order', function($q) {
-            // Filter out orders that are fully returned
-            $q->where(function($subQ) {
-                $subQ->whereDoesntHave('returPenjualan', function($rq) {
-                    $rq->whereIn('status', ['draft', 'selesai']);
-                });
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
             });
         });
         

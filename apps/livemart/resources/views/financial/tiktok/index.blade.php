@@ -311,7 +311,7 @@
                     <tbody>
                         @php
                             // Group transactions by order number
-                            $groupedTransactions = $transactions->groupBy('no_order');
+                            $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
                         @endphp
                         
                         @forelse($groupedTransactions as $orderNumber => $orderTransactions)

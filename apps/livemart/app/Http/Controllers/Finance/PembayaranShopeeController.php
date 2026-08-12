@@ -15,6 +15,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ShopeeFinanceAnalyticsExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\AdjustmentHistory;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranShopeeController extends Controller
 {
@@ -39,8 +41,9 @@ class PembayaranShopeeController extends Controller
         
         // Optimized eager loading - only load what's needed for display
         $query = ShopeeFinancialTransaction::with([
-            'order:id,order_number,tanggal,hari',
-            'order.orderItems:id,order_id,price_after_discount,quantity'
+            'order.orderItems.platformProduct.mappingBarang',
+            'order.orderItems.warehouseStock.tax',
+            'order.mainCategory'
         ]);
         
         // Filter by payment date range
@@ -106,122 +109,34 @@ class PembayaranShopeeController extends Controller
             }
         }
         
-        // Exclude only fully returned orders (retur full), not partial returns (retur sebagian)
-        // Orders with partial returns should still appear in finance index
-        $query->whereNotExists(function($subQuery) {
-            $subQuery->select(DB::raw(1))
-                ->from('retur_penjualans as rp')
-                ->join('orders as o', 'rp.order_id', '=', 'o.id')
-                ->join('retur_penjualan_details as rpd', 'rp.id', '=', 'rpd.retur_penjualan_id')
-                ->join('order_items as oi', 'rpd.order_item_id', '=', 'oi.id')
-                ->whereColumn('o.order_number', 'shopee_financial_transactions.no_order')
-                ->whereIn('rp.status', ['draft', 'selesai'])
-                ->whereNotNull('o.order_number')
-                ->where('o.order_number', '!=', '')
-                ->groupBy('o.id')
-                ->havingRaw('SUM(rpd.qty) >= (
-                    SELECT COALESCE(SUM(oi2.quantity * COALESCE((
-                        SELECT SUM(mb.quantity)
-                        FROM mapping_barangs mb
-                        WHERE mb.platform_product_id = oi2.platform_product_id
-                          AND mb.is_active = 1
-                    ), 1)), 0)
-                    FROM order_items oi2
-                    WHERE oi2.order_id = o.id
-                )');
-        });
-        
-        // Optimized: Calculate all totals in a single query with caching
-        $cacheKey = 'shopee_totals_' . md5(serialize($request->all()));
-        $totals = cache()->remember($cacheKey, 300, function() use ($request) { // Cache for 5 minutes
-            // Create a fresh query for totals calculation (without pagination)
-            $totalsQuery = ShopeeFinancialTransaction::with([
-                'order:id,order_number,tanggal,hari',
-                'order.orderItems:id,order_id,price_after_discount,quantity'
-            ]);
-            
-            // Apply the same filters as main query
-            if ($request->filled('from_date')) {
-                $totalsQuery->whereDate('tanggal_masuk_pembayaran', '>=', $request->from_date);
-            }
-            if ($request->filled('to_date')) {
-                $totalsQuery->whereDate('tanggal_masuk_pembayaran', '<=', $request->to_date);
-            }
-            if ($request->filled('from_order_date')) {
-                $totalsQuery->whereDate('tanggal_order', '>=', $request->from_order_date);
-            }
-            if ($request->filled('to_order_date')) {
-                $totalsQuery->whereDate('tanggal_order', '<=', $request->to_order_date);
-            }
-            if ($request->filled('order_number')) {
-                $totalsQuery->where('no_order', 'like', '%' . $request->order_number . '%');
-            }
-            if ($request->filled('invoice_number')) {
-                $totalsQuery->where('no_invoice', 'like', '%' . $request->invoice_number . '%');
-            }
-            if ($request->filled('tax_id')) {
-                $taxIds = (array) $request->tax_id;
-                $totalsQuery->where(function($q) use ($taxIds) {
-                    foreach ($taxIds as $taxId) {
-                        $q->orWhere('no_invoice', 'like', '%/' . str_pad($taxId, 2, '0', STR_PAD_LEFT));
-                    }
-                });
-            }
-            if ($request->filled('payment_date')) {
-                $totalsQuery->whereDate('tanggal_masuk_pembayaran', $request->payment_date);
-            }
-            if ($request->filled('outstanding_status')) {
-                if ($request->outstanding_status === '0') {
-                    // Lunas: outstanding harus tepat 0 (dengan toleransi kecil untuk floating point)
-                    $totalsQuery->whereRaw('ABS(outstanding) <= 0.01');
-                } elseif ($request->outstanding_status === '1') {
-                    // Outstanding: outstanding tidak sama dengan 0 (ada selisih)
-                    $totalsQuery->whereRaw('ABS(outstanding) > 0.01');
-                }
-            }
-            
-            // Exclude only fully returned orders (retur full), not partial returns (retur sebagian)
-            // Same filter as main query to ensure totals are consistent
-            $totalsQuery->whereNotExists(function($subQuery) {
-                $subQuery->select(DB::raw(1))
-                    ->from('retur_penjualans as rp')
-                    ->join('orders as o', 'rp.order_id', '=', 'o.id')
-                    ->join('retur_penjualan_details as rpd', 'rp.id', '=', 'rpd.retur_penjualan_id')
-                    ->join('order_items as oi', 'rpd.order_item_id', '=', 'oi.id')
-                    ->whereColumn('o.order_number', 'shopee_financial_transactions.no_order')
-                    ->whereIn('rp.status', ['draft', 'selesai'])
-                    ->whereNotNull('o.order_number')
-                    ->where('o.order_number', '!=', '')
-                    ->groupBy('o.id')
-                    ->havingRaw('SUM(rpd.qty) >= (
-                        SELECT COALESCE(SUM(oi2.quantity * COALESCE((
-                            SELECT SUM(mb.quantity)
-                            FROM mapping_barangs mb
-                            WHERE mb.platform_product_id = oi2.platform_product_id
-                              AND mb.is_active = 1
-                        ), 1)), 0)
-                        FROM order_items oi2
-                        WHERE oi2.order_id = o.id
-                    )');
-            });
-            
-            return $totalsQuery->selectRaw('
-                COUNT(*) as total_count,
-                SUM(nominal_fix) as total_nominal_fix,
-                SUM(saldo_masuk) as total_saldo_masuk,
-                SUM(outstanding) as total_outstanding
-            ')->first();
-        });
-        
-        $totalCount = $totals->total_count ?? 0;
-        $totalNominalFix = $totals->total_nominal_fix ?? 0;
-        $totalSaldoMasuk = $totals->total_saldo_masuk ?? 0;
-        $totalOutstanding = $totals->total_outstanding ?? 0;
-        
-        // Note: Removed is_fully_returned filter as column doesn't exist in database
+        // Get all transactions matching the query (without pagination yet)
+        $allTransactions = $query->orderBy('tanggal_order', 'desc')->get();
 
-        // Get paginated transactions
-        $transactions = $query->orderBy('tanggal_order', 'desc')->paginate(15);
+        // Filter out fully returned orders (retur full), keep partial returns (retur sebagian)
+        // Uses Order::isFullyReturned() for consistent logic across all platforms
+        $filteredCollection = $allTransactions->filter(function($transaction) {
+            if ($transaction->order && $transaction->order->isFullyReturned()) {
+                return false;
+            }
+            return true;
+        });
+
+        // Calculate totals for cards from FILTERED data (after fully-returned filter)
+        $totalCount = $filteredCollection->count();
+        $totalNominalFix = $filteredCollection->sum('nominal_fix');
+        $totalSaldoMasuk = $filteredCollection->sum('saldo_masuk');
+        $totalOutstanding = $filteredCollection->sum('outstanding');
+
+        // Paginate the filtered results for display
+        $perPage = 15;
+        $currentPage = Paginator::resolveCurrentPage('page');
+        $transactions = new LengthAwarePaginator(
+            $filteredCollection->forPage($currentPage, $perPage)->values(),
+            $filteredCollection->count(),
+            $perPage,
+            $currentPage,
+            ['path' => Paginator::resolveCurrentPath()]
+        );
         
         // Get all orders that don't have financial transactions
         $missingOrdersQuery = Order::with(['orderItems', 'orderItems.platformProduct.mappingBarang'])
@@ -242,7 +157,7 @@ class PembayaranShopeeController extends Controller
             });
             
         // Group transactions by order number for display
-        $groupedTransactions = $transactions->groupBy('no_order');
+        $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
         
         return view('financial.shopee.index', compact(
             'transactions', 
@@ -1308,7 +1223,16 @@ class PembayaranShopeeController extends Controller
                     }
                     
                     $order = $orders[$orderNumber];
-                    
+
+                    // PERBAIKAN: Skip order yang sudah diretur penuh (retur draft/selesai)
+                    // agar transaksi finance tidak dibuat setelah retur full diproses
+                    if ($order->isFullyReturned()) {
+                        $skippedCount++;
+                        $skippedReasons[] = "Baris #" . ($index + 1) . ": Order {$orderNumber} sudah diretur penuh";
+                        Log::warning("Skipping order {$orderNumber} - order is fully returned");
+                        continue;
+                    }
+
                     // Check if a transaction with this order number already exists
                     if (in_array($orderNumber, $existingTransactions)) {
                         // Skip this order since a transaction already exists

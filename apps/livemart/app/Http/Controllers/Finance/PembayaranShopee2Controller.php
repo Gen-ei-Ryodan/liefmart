@@ -761,7 +761,16 @@ class PembayaranShopee2Controller extends Controller
                     }
                     
                     $order = $orders[$orderNumber];
-                    
+
+                    // PERBAIKAN: Skip order yang sudah diretur penuh (retur draft/selesai)
+                    // agar transaksi finance tidak dibuat setelah retur full diproses
+                    if ($order->isFullyReturned()) {
+                        $skippedCount++;
+                        $skippedReasons[] = "Baris #" . ($index + 1) . ": Order {$orderNumber} sudah diretur penuh";
+                        Log::warning("Skipping order {$orderNumber} - order is fully returned");
+                        continue;
+                    }
+
                     // Check if a transaction with this order number already exists
                     if (in_array($orderNumber, $existingTransactions)) {
                         // Skip this order since a transaction already exists

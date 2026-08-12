@@ -885,14 +885,23 @@ class PembayaranTiktok2Controller extends Controller
                 $rowData = $processedRow['rowData'];
                 
                 try {
-                    // Check if order exists (using pre-loaded data)
+// Check if order exists (using pre-loaded data)
                     $order = $orders[$rowData['NOMOR PESANAN']] ?? null;
                     if (!$order) {
                         $skippedCount++;
                         $skippedReasons[] = "Row #$index: Order {$rowData['NOMOR PESANAN']} not found";
                         continue;
                     }
-                    
+
+                    // PERBAIKAN: Skip order yang sudah diretur penuh (retur draft/selesai)
+                    // agar transaksi finance tidak dibuat setelah retur full diproses
+                    if ($order->isFullyReturned()) {
+                        $skippedCount++;
+                        $skippedReasons[] = "Row #$index: Order {$rowData['NOMOR PESANAN']} sudah diretur penuh";
+                        \Log::warning("Skipping order {$rowData['NOMOR PESANAN']} - order is fully returned");
+                        continue;
+                    }
+
                     // Check if transaction already exists (using pre-loaded data)
                     if (in_array($rowData['NOMOR PESANAN'], $existingTransactions)) {
                         $skippedCount++;

@@ -149,20 +149,14 @@ class ShopeeFinanceAnalyticsExport extends DefaultValueBinder implements FromQue
             }
         }
 
-        // Exclude only fully returned orders (retur full), not partial returns (retur sebagian)
-        // Orders with partial returns should still appear in finance index
-        $query->whereNotExists(function($subQuery) {
-            $subQuery->select(\Illuminate\Support\Facades\DB::raw(1))
-                ->from('retur_penjualans as rp')
-                ->join('orders as o', 'rp.order_id', '=', 'o.id')
-                ->join('retur_penjualan_details as rpd', 'rp.id', '=', 'rpd.retur_penjualan_id')
-                ->join('order_items as oi', 'rpd.order_item_id', '=', 'oi.id')
-                ->whereColumn('o.order_number', 'shopee_financial_transactions.no_order')
-                ->whereIn('rp.status', ['draft', 'selesai'])
-                ->whereNotNull('o.order_number')
-                ->where('o.order_number', '!=', '')
-                ->groupBy('o.id')
-                ->havingRaw('SUM(rpd.qty) >= (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE order_id = o.id)');
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
+            });
         });
 
         return $query;

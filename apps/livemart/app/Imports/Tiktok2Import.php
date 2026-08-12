@@ -1375,10 +1375,12 @@ class Tiktok2Import implements ToCollection, WithMultipleSheets
                 \Log::info("Processing mapping for product ID: {$mapping->product_id}, Qty to reduce: {$qtyToReduce}");
 
                 // Ambil stok produk dari warehouse berdasarkan FIFO + prioritas HGN
+                // PERBAIKAN: lockForUpdate() mencegah race condition saat 2 import berjalan bersamaan
                 $stocks = WarehouseStock::where('product_id', $mapping->product_id)
                     ->where('qty', '>', 0)
                     ->orderBy('created_at') // Layer 1: FIFO berdasarkan tanggal penerimaan
                     ->orderBy('tax_id', 'asc') // Layer 2: HGN (tax_id=3) dulu, baru LM (tax_id=4)
+                    ->lockForUpdate()
                     ->get();
                 \Log::info('Found stock records: ' . $stocks->count());
 

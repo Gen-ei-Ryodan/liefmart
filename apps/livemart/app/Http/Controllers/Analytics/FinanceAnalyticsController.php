@@ -93,6 +93,16 @@ class FinanceAnalyticsController extends Controller
             }
         }
 
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
+            });
+        });
+
         // Calculate totals for cards from filtered data
         $totalCount = $query->count();
         $totalNominalFix = $query->sum('nominal_fix');
@@ -104,7 +114,7 @@ class FinanceAnalyticsController extends Controller
         $transactions = $transactions->orderBy('tanggal_order', 'desc')->paginate(15);
         
         // Group transactions by order number for display
-        $groupedTransactions = $transactions->groupBy('no_order');
+        $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
 
         return view('analytics.finance.shopee', compact(
             'transactions', 
@@ -193,13 +203,13 @@ class FinanceAnalyticsController extends Controller
             }
         }
         
-        // Exclude transactions with fully returned orders
-        $query->whereHas('order', function($q) {
-            // Filter out orders that are fully returned
-            $q->where(function($subQ) {
-                $subQ->whereDoesntHave('returPenjualan', function($rq) {
-                    $rq->whereIn('status', ['draft', 'selesai']);
-                });
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
             });
         });
 
@@ -214,7 +224,7 @@ class FinanceAnalyticsController extends Controller
         $transactions = $transactions->orderBy('tanggal_order', 'desc')->paginate(15);
         
         // Group transactions by order number for display
-        $groupedTransactions = $transactions->groupBy('no_order');
+        $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
 
         return view('analytics.finance.tiktok', compact(
             'transactions', 
@@ -303,6 +313,16 @@ class FinanceAnalyticsController extends Controller
             }
         }
 
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
+            });
+        });
+
         // Calculate totals for cards from filtered data
         $totalCount = $query->count();
         $totalNominalFix = $query->sum('nominal_fix');
@@ -314,7 +334,7 @@ class FinanceAnalyticsController extends Controller
         $transactions = $transactions->orderBy('tanggal_order', 'desc')->paginate(15);
         
         // Group transactions by order number for display
-        $groupedTransactions = $transactions->groupBy('no_order');
+        $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
 
         return view('analytics.finance.shopee2', compact(
             'transactions', 
@@ -403,13 +423,13 @@ class FinanceAnalyticsController extends Controller
             }
         }
         
-        // Exclude transactions with fully returned orders
-        $query->whereHas('order', function($q) {
-            // Filter out orders that are fully returned
-            $q->where(function($subQ) {
-                $subQ->whereDoesntHave('returPenjualan', function($rq) {
-                    $rq->whereIn('status', ['draft', 'selesai']);
-                });
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
             });
         });
 
@@ -424,7 +444,7 @@ class FinanceAnalyticsController extends Controller
         $transactions = $transactions->orderBy('tanggal_order', 'desc')->paginate(15);
         
         // Group transactions by order number for display
-        $groupedTransactions = $transactions->groupBy('no_order');
+        $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
 
         return view('analytics.finance.tiktok2', compact(
             'transactions', 

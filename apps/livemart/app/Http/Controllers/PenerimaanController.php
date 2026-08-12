@@ -531,6 +531,12 @@ class PenerimaanController extends Controller
                     ->with('error', 'Penerimaan yang sudah diproses (Located) tidak dapat dihapus.');
             }
 
+            // Hapus WarehouseStock terkait agar tidak jadi stok orphan
+            $detailIds = PenerimaanDetail::where('penerimaan_id', $id)->pluck('id')->toArray();
+            if (!empty($detailIds)) {
+                WarehouseStock::whereIn('penerimaan_detail_id', $detailIds)->delete();
+            }
+
             // Hapus detail penerimaan
             PenerimaanDetail::where('penerimaan_id', $id)->delete();
 
@@ -696,6 +702,30 @@ class PenerimaanController extends Controller
             DB::beginTransaction();
 
             $penerimaan = Penerimaan::findOrFail($id);
+
+            // Cek apakah ada WarehouseStock dari penerimaan ini yang sudah digunakan
+            // di barang_keluar, order_items, atau offline_sale_items sebelum dihapus
+            $existingDetailIds = PenerimaanDetail::where('penerimaan_id', $penerimaan->id)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($existingDetailIds)) {
+                $existingStockIds = WarehouseStock::whereIn('penerimaan_detail_id', $existingDetailIds)
+                    ->pluck('id')
+                    ->toArray();
+
+                $hasBarangKeluar = !empty($existingStockIds) && BarangKeluar::whereIn('warehouse_stock_id', $existingStockIds)->exists();
+                $hasOrderItem = !empty($existingStockIds) && OrderItem::whereIn('warehouse_stock_id', $existingStockIds)->exists();
+                $hasOfflineSaleItem = !empty($existingStockIds) && OfflineSaleItem::whereIn('warehouse_stock_id', $existingStockIds)->exists();
+
+                if ($hasBarangKeluar || $hasOrderItem || $hasOfflineSaleItem) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Penerimaan tidak dapat disimpan karena stok sudah digunakan dalam transaksi penjualan.'
+                    ], 409);
+                }
+            }
 
             // Get all detail IDs that will be deleted
             $detailIds = PenerimaanDetail::where('penerimaan_id', $penerimaan->id)

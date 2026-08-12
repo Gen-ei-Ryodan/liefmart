@@ -149,13 +149,13 @@ class TiktokFinanceAnalyticsExport extends DefaultValueBinder implements FromQue
             }
         }
         
-        // Exclude transactions with fully returned orders
-        $query->whereHas('order', function($q) {
-            // Filter out orders that are fully returned
-            $q->where(function($subQ) {
-                $subQ->whereDoesntHave('returPenjualan', function($rq) {
-                    $rq->whereIn('status', ['draft', 'selesai']);
-                });
+        // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)
+        $query->where(function($q) {
+            // Keep transactions whose order still has remaining qty (partial return) or has no retur
+            $q->whereHas('order.orderItems', function($itemQuery) {
+                $itemQuery->where('quantity', '>', 0);
+            })->orWhereDoesntHave('order.returPenjualan', function($returQuery) {
+                $returQuery->whereIn('status', ['draft', 'selesai']);
             });
         });
 
