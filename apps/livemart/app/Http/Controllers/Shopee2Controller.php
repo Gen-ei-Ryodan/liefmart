@@ -48,12 +48,19 @@ class Shopee2Controller extends Controller
             $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($routeParam) . '%'])->first();
         }
         
-        // 4. Jika masih tidak ditemukan, gunakan platform ID default untuk Shopee Liefmarket (ID 6)
+        // 4. Jika masih tidak ditemukan, cari shopee liefmarket secara spesifik
         if (!$platform) {
-            $platform = Platform::find(6); // Shopee Liefmarket = ID 6
+            $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%shopee%liefmarket%'])->first();
         }
         
-        // 5. Jika benar-benar tidak ada platform di database
+        // 5. Jika masih tidak ditemukan, cari shopee tapi hindari lamourad
+        if (!$platform) {
+            $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%shopee%'])
+                ->whereRaw('LOWER(name) NOT LIKE ?', ['%lamourad%'])
+                ->first();
+        }
+        
+        // 6. Jika benar-benar tidak ada platform di database
         if (!$platform) {
             throw new \Exception('Platform tidak ditemukan di database. Pastikan ada platform yang terdaftar.');
         }
@@ -204,7 +211,7 @@ class Shopee2Controller extends Controller
             }
             
             // Set main category ke Kosmetik sebelum validasi stok
-            session(['main_category_id' => 2]);
+            session(['main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId()]);
             session(['main_category_name' => 'Kosmetik']);
             
             // Debug logging
@@ -574,7 +581,7 @@ class Shopee2Controller extends Controller
 
         try {
             // Set main category ke Kosmetik sebelum import
-            session(['main_category_id' => 2]);
+            session(['main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId()]);
             session(['main_category_name' => 'Kosmetik']);
             
             // Debug logging

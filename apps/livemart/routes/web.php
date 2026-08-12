@@ -517,14 +517,7 @@ Route::prefix('analytics')
     ->middleware(['auth', 'prevent-back-history', 'under.construction', 'permission:analytics.view'])
     ->group(function () {
         // Online Sales Analytics
-        Route::get('/', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'salesValueReport'])->name('index');
-        Route::get('/sales-value-report', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'salesValueReport'])->name('sales-value-report');
-        Route::get('/sales-volume-report', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'salesVolumeReport'])->name('sales-volume-report');
-        Route::get('/gross-profit-report', [App\Http\Controllers\Analytics\GrossProfitAnalyticsController::class, 'grossProfitReport'])->name('gross-profit-report');
-        Route::get('/single-item-report', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'singleItemReport'])->name('single-item-report');
-        Route::get('/multiple-item-report', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'multipleItemReport'])->name('multiple-item-report');
-        Route::get('/daily-sales-report', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'dailySalesReport'])->name('daily-sales-report');
-        Route::get('/discount-analysis-report', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'discountAnalysisReport'])->name('discount-analysis-report');
+        Route::redirect('/', '/analytics/sales-by-platform')->name('index');
         Route::get('/sales-by-platform', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'salesByPlatformReport'])->name('sales-by-platform');
         Route::get('/sales-export-mapped', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'salesExportMapped'])->name('sales-export-mapped');
         Route::get('/sales-export-mapped/export', [App\Http\Controllers\Analytics\SalesAnalyticsController::class, 'exportSalesMapped'])->name('sales-export-mapped.export');
@@ -667,10 +660,14 @@ Route::group(['prefix' => 'master', 'as' => 'master.', 'middleware' => ['auth', 
 // Product-related routes (apply middleware)
 Route::middleware(['auth', 'prevent-back-history', 'under.construction', 'permission:master.view'])->group(function () {
     Route::resource('brands', App\Http\Controllers\Master\BrandController::class);
+    if (app()->environment('local')) {
     Route::get('/fix-brands', [App\Http\Controllers\Master\BrandController::class, 'fixMissingCategories'])->name('fix.brands');
     Route::get('/test-brand', [App\Http\Controllers\Master\BrandController::class, 'test'])->name('test.brand');
+    }
     Route::resource('subbrands', App\Http\Controllers\Master\SubBrandController::class);
+    if (app()->environment('local')) {
     Route::get('/fix-subbrands', [App\Http\Controllers\Master\SubBrandController::class, 'fixMissingBrands'])->name('fix.subbrands');
+    }
     Route::resource('product-categories', App\Http\Controllers\Master\ProductCategoryController::class);
     Route::resource('product-types', App\Http\Controllers\Master\ProductTypeController::class);
     Route::resource('product-sizes', App\Http\Controllers\Master\ProductSizeController::class);

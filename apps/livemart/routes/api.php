@@ -33,10 +33,12 @@ Route::get('/products', [PenerimaanController::class, 'getProducts']);
 // Routes for sales-related API endpoints
 Route::get('/products/{product}/stock-info', [SalesController::class, 'getProductStockInfo']);
 
-// Routes for dynamic creation of master data
-Route::post('/brands', [BrandController::class, 'storeApi']);
-Route::post('/sub-brands', [SubBrandController::class, 'storeApi']);
-Route::post('/product-categories', [ProductCategoryController::class, 'storeApi']);
-Route::post('/product-types', [ProductTypeController::class, 'storeApi']);
-Route::post('/product-sizes', [ProductSizeController::class, 'storeApi']);
-Route::post('/product-variants', [ProductVariantController::class, 'storeApi']);
+// Routes for dynamic creation of master data (require authenticated web session)
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/brands', [BrandController::class, 'storeApi']);
+    Route::post('/sub-brands', [SubBrandController::class, 'storeApi']);
+    Route::post('/product-categories', [ProductCategoryController::class, 'storeApi']);
+    Route::post('/product-types', [ProductTypeController::class, 'storeApi']);
+    Route::post('/product-sizes', [ProductSizeController::class, 'storeApi']);
+    Route::post('/product-variants', [ProductVariantController::class, 'storeApi']);
+});

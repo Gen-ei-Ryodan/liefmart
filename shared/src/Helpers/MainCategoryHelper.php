@@ -24,4 +24,26 @@ class MainCategoryHelper
     {
         return session('main_category_name');
     }
+
+    /**
+     * Cari ID kategori kosmetik secara dinamis dari database.
+     * Mencocokkan beberapa penamaan (Kosmetik, SKINCARE, Skincare),
+     * fallback ke kategori aktif pertama jika tidak ditemukan.
+     */
+    public static function getCosmeticCategoryId()
+    {
+        $names = ['Kosmetik', 'SKINCARE', 'Skincare', 'COSMETIC', 'Cosmetic'];
+
+        foreach ($names as $name) {
+            $category = \App\Models\MainCategory::where('name', $name)
+                ->where('is_active', true)
+                ->first();
+            if ($category) {
+                return $category->id;
+            }
+        }
+
+        $fallback = \App\Models\MainCategory::where('is_active', true)->first();
+        return $fallback ? $fallback->id : null;
+    }
 } 

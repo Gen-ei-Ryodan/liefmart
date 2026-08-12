@@ -48,12 +48,19 @@ class Tiktok2Controller extends Controller
             $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($routeParam) . '%'])->first();
         }
         
-        // 4. Jika masih tidak ditemukan, gunakan platform ID default untuk Tiktok Liefmarket (ID 7)
+        // 4. Jika masih tidak ditemukan, cari tiktok liefmarket secara spesifik
         if (!$platform) {
-            $platform = Platform::find(7); // Tiktok Liefmarket = ID 7
+            $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%tiktok%liefmarket%'])->first();
         }
         
-        // 5. Jika benar-benar tidak ada platform di database
+        // 5. Jika masih tidak ditemukan, cari tiktok tapi hindari lamourad
+        if (!$platform) {
+            $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%tiktok%'])
+                ->whereRaw('LOWER(name) NOT LIKE ?', ['%lamourad%'])
+                ->first();
+        }
+        
+        // 6. Jika benar-benar tidak ada platform di database
         if (!$platform) {
             throw new \Exception('Platform tidak ditemukan di database. Pastikan ada platform yang terdaftar.');
         }
@@ -168,7 +175,7 @@ public function importExcel()
             }
             
             // Set main category ke Kosmetik sebelum validasi stok
-            session(['main_category_id' => 2]);
+            session(['main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId()]);
             session(['main_category_name' => 'Kosmetik']);
             
             // Debug logging

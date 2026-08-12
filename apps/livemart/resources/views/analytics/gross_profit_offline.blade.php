@@ -9,7 +9,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('analytics.index') }}">Analytics</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('analytics.sales-by-platform') }}">Analytics</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Gross Profit Offline</li>
                 </ol>
             </nav>

@@ -190,7 +190,7 @@ public function importExcel()
             }
             
             // Set main category ke Kosmetik sebelum validasi stok
-            session(['main_category_id' => 2]);
+            session(['main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId()]);
             session(['main_category_name' => 'Kosmetik']);
             
             // Debug logging

@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 use Exception;
 
 class DatabaseRestoreController extends Controller
@@ -143,13 +142,30 @@ class DatabaseRestoreController extends Controller
             $password = config('database.connections.mysql.password');
             $host = config('database.connections.mysql.host');
             $port = config('database.connections.mysql.port');
-            
+
             // Command yang sangat cepat seperti phpMyAdmin
-            $command = "mysqldump -h {$host} -P {$port} -u {$username} -p{$password} --quick --lock-tables=false {$database} > {$backupPath}";
-            
-            // Jalankan command dengan shell_exec untuk kecepatan maksimal
-            $output = shell_exec($command . ' 2>&1');
-            
+            // Password dikirim via env MYSQL_PWD, bukan di argumen command,
+            // supaya tidak bocor ke daftar proses (ps aux) atau shell history.
+            $command = [
+                'mysqldump', "-h{$host}", "-P{$port}", "-u{$username}",
+                '--quick', '--lock-tables=false',
+                $database,
+            ];
+
+            $process = new Process($command, null, ['MYSQL_PWD' => $password]);
+            $process->setTimeout(300);
+            $backupFile = fopen($backupPath, 'w');
+            $process->run(function ($type, $buffer) use ($backupFile) {
+                if ($type === Process::OUT) {
+                    fwrite($backupFile, $buffer);
+                }
+            });
+            fclose($backupFile);
+
+            if (!$process->isSuccessful()) {
+                throw new Exception('mysqldump gagal: ' . trim($process->getErrorOutput()));
+            }
+
             // Verifikasi file backup dibuat
             if (!File::exists($backupPath) || File::size($backupPath) == 0) {
                 throw new Exception('File backup tidak dibuat atau kosong');
@@ -170,63 +186,31 @@ class DatabaseRestoreController extends Controller
         $password = config('database.connections.mysql.password');
         $host = config('database.connections.mysql.host');
         $port = config('database.connections.mysql.port');
-        
-        // WIPE ALL DATA - Hapus semua data dan tabel seperti phpMyAdmin
-        $this->wipeAllData();
-        
+
         // Optimized restore command untuk MariaDB dump
         // Menggunakan --force untuk mengabaikan error minor dan --verbose untuk logging
-        $command = "mysql -h {$host} -P {$port} -u {$username} -p{$password} --force --verbose {$database} < {$sqlFilePath}";
-        
-        // Jalankan restore command dengan timeout
-        $output = shell_exec("timeout 300 " . $command . ' 2>&1');
-        
+        // Password via env MYSQL_PWD agar tidak bocor ke daftar proses.
+        $command = [
+            'mysql', "-h{$host}", "-P{$port}", "-u{$username}",
+            '--force', '--verbose', $database,
+        ];
+
+        $process = new Process($command, null, ['MYSQL_PWD' => $password]);
+        $process->setTimeout(300);
+        $process->setInput(file_get_contents($sqlFilePath));
+        $process->run();
+        $output = $process->getOutput() . $process->getErrorOutput();
+
         // Verifikasi restore berhasil
         if (strpos($output, 'ERROR') !== false && strpos($output, 'ERROR 1062') === false) {
             // ERROR 1062 adalah duplicate key error yang bisa diabaikan untuk restore
-            throw new Exception('Gagal restore database: ' . $output);
+            throw new Exception('Gagal restore database: ' . substr($output, -2000));
         }
-        
+
         // Log success
         Log::info('Database restore completed successfully');
     }
     
-    private function wipeAllData()
-    {
-        try {
-            // Disable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            
-            // Dapatkan semua nama tabel
-            $tables = DB::select('SHOW TABLES');
-            $databaseName = config('database.connections.mysql.database');
-            $tableKey = 'Tables_in_' . $databaseName;
-            
-            // Hapus semua data dari setiap tabel
-            foreach ($tables as $table) {
-                $tableName = $table->$tableKey;
-                DB::statement("TRUNCATE TABLE `{$tableName}`");
-            }
-            
-            // Drop semua tabel
-            foreach ($tables as $table) {
-                $tableName = $table->$tableKey;
-                DB::statement("DROP TABLE IF EXISTS `{$tableName}`");
-            }
-            
-            // Enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-            
-            Log::info('All data and tables wiped successfully');
-            
-        } catch (Exception $e) {
-            Log::error('Failed to wipe data: ' . $e->getMessage());
-            throw $e;
-        }
-    }
-
-
-
     public function downloadBackup()
     {
         // Check if user is superadmin (role_id = 1)
@@ -281,11 +265,27 @@ class DatabaseRestoreController extends Controller
         ]);
         
         try {
-            $fileName = $request->server_file;
-            $filePath = storage_path('app/sql-uploads/' . $fileName);
-            
+            $fileName = basename($request->server_file);
+            $uploadDir = realpath(storage_path('app/sql-uploads'));
+
+            // Validate direktori sql-uploads tersedia
+            if ($uploadDir === false) {
+                Log::error('Upload directory not found for restore');
+                return redirect()->route('database-restore.index')
+                    ->with('error', 'Direktori upload tidak ditemukan.');
+            }
+
+            $filePath = realpath($uploadDir . '/' . $fileName);
+
             Log::info('Server restore attempt: ' . $fileName . ' at ' . $filePath);
-            
+
+            // Validate file path benar-benar di dalam direktori sql-uploads
+            if ($filePath === false || strpos($filePath, $uploadDir . DIRECTORY_SEPARATOR) !== 0) {
+                Log::error('Invalid path traversal attempt: ' . $fileName);
+                return redirect()->route('database-restore.index')
+                    ->with('error', 'Path file tidak valid: ' . $fileName);
+            }
+
             // Validate file exists
             if (!file_exists($filePath)) {
                 Log::error('File not found: ' . $filePath);
