@@ -36,7 +36,7 @@ class ReturPembelian extends Model
      */
     public function penerimaan(): BelongsTo
     {
-        return $this->belongsTo(Penerimaan::class);
+        return $this->belongsTo(Penerimaan::class)->withoutGlobalScope('mainCategory');
     }
 
     /**

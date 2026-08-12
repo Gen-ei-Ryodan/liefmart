@@ -29,7 +29,7 @@ class ReturOfflineSale extends Model
      */
     public function offlineSale(): BelongsTo
     {
-        return $this->belongsTo(OfflineSale::class);
+        return $this->belongsTo(OfflineSale::class)->withoutGlobalScope('mainCategory');
     }
 
     /**

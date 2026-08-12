@@ -9,14 +9,12 @@ class LokasiSeeder extends Seeder
 {
     public function run()
     {
-        Lokasi::create([
-            'kode' => 'UNLOCATED',
+        Lokasi::updateOrCreate(['kode' => 'UNLOCATED'], [
             'nama' => 'Unlocated',
             'deskripsi' => 'Tempat penyimpanan sementara barang yang baru diterima',
         ]);
 
-        Lokasi::create([
-            'kode' => 'GUDANG_A',
+        Lokasi::updateOrCreate(['kode' => 'GUDANG_A'], [
             'nama' => 'Gudang A',
             'deskripsi' => 'Gudang utama penyimpanan barang',
         ]);
