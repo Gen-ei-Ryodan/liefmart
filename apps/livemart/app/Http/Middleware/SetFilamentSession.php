@@ -11,7 +11,7 @@ class SetFilamentSession
     public function handle(Request $request, Closure $next): Response
     {
         if (!session()->has('main_category_id')) {
-            session(['main_category_id' => 2]);
+            session(['main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId()]);
             session(['main_category_name' => 'Kosmetik']);
         }
 

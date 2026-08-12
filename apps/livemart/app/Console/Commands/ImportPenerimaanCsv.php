@@ -98,7 +98,7 @@ class ImportPenerimaanCsv extends Command
 
         $penerimaan = Penerimaan::create([
             'kode_penerimaan' => 'PR-' . date('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT),
-            'main_category_id' => 2,
+            'main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId(),
             'tax_category_id' => $taxCategoryId,
             'nomor_po' => $nomorPo,
             'tanggal_penerimaan' => $tanggalPenerimaan,

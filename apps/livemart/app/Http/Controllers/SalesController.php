@@ -764,19 +764,35 @@ class SalesController extends Controller
             return $platform;
         }
 
-        // Fallback mapping for known aliases/IDs
-        $aliasMap = [
-            'shopee2' => 6,
-            'shopee troublue' => 6,
-            'shopee trubleu' => 6,
-            'shopee trouble' => 6,
-            'tiktok2' => 7,
-            'tiktok troublue' => 7,
-            'tiktok trouble' => 7,
+        // Fallback mapping untuk alias shopee2/tiktok2 dan varian "Liefmarket"
+        // (dulu memakai Platform::find(6)/find(7) — ID hardcoded yang salah,
+        //  karena ID platform bisa berbeda antar database).
+        $liefmarketAliases = [
+            'shopee2' => 'shopee',
+            'shopee troublue' => 'shopee',
+            'shopee trubleu' => 'shopee',
+            'shopee trouble' => 'shopee',
+            'tiktok2' => 'tiktok',
+            'tiktok troublue' => 'tiktok',
+            'tiktok trouble' => 'tiktok',
         ];
 
-        if (isset($aliasMap[$slug])) {
-            return Platform::find($aliasMap[$slug]);
+        if (isset($liefmarketAliases[$slug])) {
+            $keyword = $liefmarketAliases[$slug];
+
+            // Cari varian "Liefmarket" secara spesifik
+            $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%' . $keyword . '%liefmarket%'])->first();
+
+            // Fallback: cari platform dengan keyword tapi hindari Lamourad
+            if (!$platform) {
+                $platform = Platform::whereRaw('LOWER(name) LIKE ?', ['%' . $keyword . '%'])
+                    ->whereRaw('LOWER(name) NOT LIKE ?', ['%lamourad%'])
+                    ->first();
+            }
+
+            if ($platform) {
+                return $platform;
+            }
         }
 
         return null;
