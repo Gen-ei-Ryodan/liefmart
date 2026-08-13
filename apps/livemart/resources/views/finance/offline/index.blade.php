@@ -216,36 +216,20 @@
                                                     }
                                                     
                                                     // Calculate total subtotal for this product
-                                                    // Always calculate from scratch based on total qty (same logic as print_invoice)
+                                                    // Sum subtotal dari setiap offline_sale_item unik
+                                                    // agar produk dengan harga per item berbeda (mis. 3333 & 3334) dihitung benar,
+                                                    // konsisten dengan FinanceOffline::recalculateNominal()
                                                     $totalSubTotal = 0;
-                                                    if($offlineSaleItem) {
-                                                        $basePrice = $offlineSaleItem->unit_price ?? 0;
-                                                        $totalBeforeDiscount = $basePrice * $totalQty;
-                                                        $currentTotal = $totalBeforeDiscount;
-                                                        
-                                                        // Hitung semua diskon persen (1-5)
-                                                        for($i = 1; $i <= 5; $i++) {
-                                                            $percentField = "discount_percent_" . $i;
-                                                            $discountPercent = $offlineSaleItem->$percentField ?? 0;
-                                                            if($discountPercent > 0) {
-                                                                $discountAmount = $currentTotal * ($discountPercent / 100);
-                                                                $currentTotal -= $discountAmount;
-                                                                $currentTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($currentTotal);
-                                                            }
+                                                    $processedSubtotalItemIds = [];
+                                                    foreach($productItems as $item) {
+                                                        $saleItem = $item->offlineSaleItem;
+                                                        if (!$saleItem || in_array($saleItem->id, $processedSubtotalItemIds)) {
+                                                            continue;
                                                         }
-                                                        
-                                                        // Hitung semua diskon nominal (1-5)
-                                                        for($i = 1; $i <= 5; $i++) {
-                                                            $amountField = "discount_amount_" . $i;
-                                                            $discountAmount = $offlineSaleItem->$amountField ?? 0;
-                                                            if($discountAmount > 0) {
-                                                                $currentTotal -= ($discountAmount * $totalQty);
-                                                                $currentTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($currentTotal);
-                                                            }
-                                                        }
-                                                        
-                                                        $totalSubTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($currentTotal);
+                                                        $processedSubtotalItemIds[] = $saleItem->id;
+                                                        $totalSubTotal += $saleItem->subtotal ?? 0;
                                                     }
+                                                    $totalSubTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($totalSubTotal);
                                                     
                                                     // Get invoice info (use first item's invoice found)
                                                     $invoiceInfo = null;

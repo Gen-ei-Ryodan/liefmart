@@ -408,13 +408,14 @@
                     
                     // First, calculate total amount before discount and after discount
                     // Use subtotal from database to ensure accuracy
-                    // Group by product first to handle returns correctly
+                    // Group by offline_sale_item to handle products with different unit prices
+                    // (mis. 16x3333 + 8x3334) dan returns secara akurat
                     $groupedForCalculation = $invoiceItems->groupBy(function($item) {
                         $offlineSaleItem = $item->offlineSaleItem;
                         if (!$offlineSaleItem || !$offlineSaleItem->product) {
                             return 'unknown_' . $item->id;
                         }
-                        return $offlineSaleItem->product->id;
+                        return 'item_' . $offlineSaleItem->id;
                     });
                     
                     foreach ($groupedForCalculation as $productId => $items) {
@@ -485,13 +486,14 @@
                     $isPKP = $taxId == 3;
                 @endphp
                 @php
-                    // Group items by product_id
+                    // Group items by offline_sale_item to handle products with different unit prices
+                    // (mis. 16x3333 + 8x3334) secara akurat dan konsisten dengan perhitungan total
                     $groupedItems = $invoice->barangKeluarItems->groupBy(function($item) {
                         $offlineSaleItem = $item->offlineSaleItem;
                         if (!$offlineSaleItem || !$offlineSaleItem->product) {
                             return 'unknown_' . $item->id;
                         }
-                        return $offlineSaleItem->product->id;
+                        return 'item_' . $offlineSaleItem->id;
                     });
                     
                     // Calculate total after discount from grouped items (for DPP calculation)
