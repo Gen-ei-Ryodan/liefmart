@@ -277,7 +277,7 @@
                                                         @endif
                                                     </td>
                                                     @if($isFirstProduct)
-                                                        <td rowspan="{{ count($groupedByProduct) }}" class="text-center align-middle">
+                                                        <td rowspan="{{ count($groupedByProduct) }}" class="text-center align-middle action-cell">
                                                             @if(!$allHaveInvoices)
                                                                 <a href="{{ route('finance.offline.generate-invoice', $offlineSaleId) }}" 
                                                                    class="btn btn-sm btn-primary" 
@@ -379,8 +379,27 @@
         overflow: visible;
     }
 
+    /* Kolom Aksi sticky di kanan agar tombol tetap terlihat saat scroll horizontal */
+    .table thead th:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 3;
+        background: #e9ecef;
+        box-shadow: -1px 0 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .table .action-cell {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: #ffffff;
+        box-shadow: -1px 0 0 rgba(0, 0, 0, 0.08);
+    }
+
+    /* Dropdown muncul tepat di bawah tombol yang diklik,
+       bukan di bawah td (yang membentang beberapa baris via rowspan) */
     .table td .dropdown {
-        position: static;
+        position: relative;
     }
 
     .table td .dropdown-menu {
@@ -389,6 +408,19 @@
         top: 100%;
         transform: none !important;
         will-change: auto !important;
+        z-index: 1050;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        border-radius: 0.375rem;
+    }
+
+    /* Menu dropdown yang sedang terbuka selalu tampil di lapisan teratas */
+    .table td .dropdown-menu.show {
+        z-index: 1050;
+    }
+
+    /* Sementara dropdown terbuka, naikkan kolom aksi agar tidak tertutup kolom sticky lain */
+    .table .action-cell:has(.dropdown-menu.show) {
+        z-index: 1060;
     }
 
     .border-top.border-primary {
