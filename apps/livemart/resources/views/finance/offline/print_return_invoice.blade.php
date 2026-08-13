@@ -186,18 +186,20 @@
                         $invoiceItems = $invoice->barangKeluarItems;
                         $counter = 1;
                         
-                        // Group items by product and calculate return quantities
+                        // Group items by offline_sale_item agar produk dengan harga berbeda
+                        // (mis. 16x3333 + 8x3334) dihitung per item, bukan digabung pakai harga item pertama
                         $groupedItems = $invoiceItems->groupBy(function($item) {
-                            return $item->warehouseStock && $item->warehouseStock->product ? 
-                                $item->warehouseStock->product->name : 'Unknown Product';
+                            $offlineSaleItem = $item->offlineSaleItem;
+                            return $offlineSaleItem ? 'item_' . $offlineSaleItem->id : 'unknown_' . $item->id;
                         });
                     @endphp
                     
-                    @foreach($groupedItems as $productName => $items)
+                    @foreach($groupedItems as $itemKey => $items)
                         @php
                             $totalProductQty = $items->sum('qty');
                             $firstProductItem = $items->first();
                             $offlineSaleItem = $firstProductItem->offlineSaleItem;
+                            $productName = $offlineSaleItem && $offlineSaleItem->product ? $offlineSaleItem->product->name : 'Unknown Product';
                             
                             if ($offlineSaleItem) {
                                 // Get current quantities after any returns

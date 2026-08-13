@@ -188,18 +188,20 @@
                         $grandTotal = 0;
                         $invoiceItems = $invoice->barangKeluarItems;
                         
-                        // Group items by product
+                        // Group items by offline_sale_item agar produk dengan harga berbeda
+                        // (mis. 16x3333 + 8x3334) dihitung per item, bukan digabung pakai harga item pertama
                         $groupedItems = $invoiceItems->groupBy(function($item) {
-                            return $item->warehouseStock && $item->warehouseStock->product ? 
-                                $item->warehouseStock->product->name : 'Unknown Product';
+                            $offlineSaleItem = $item->offlineSaleItem;
+                            return $offlineSaleItem ? 'item_' . $offlineSaleItem->id : 'unknown_' . $item->id;
                         });
                     @endphp
                     
-                    @foreach($groupedItems as $productName => $items)
+                    @foreach($groupedItems as $itemKey => $items)
                         @php
                             $totalProductQty = $items->sum('qty');
                             $firstProductItem = $items->first();
                             $offlineSaleItem = $firstProductItem->offlineSaleItem;
+                            $productName = $offlineSaleItem && $offlineSaleItem->product ? $offlineSaleItem->product->name : 'Unknown Product';
                             $originalQty = $offlineSaleItem ? $offlineSaleItem->quantity : 0;
                             
                             // Calculate returned quantity (original - current)
