@@ -216,18 +216,54 @@
                                                     }
                                                     
                                                     // Calculate total subtotal for this product
-                                                    // Sum subtotal dari setiap offline_sale_item unik
-                                                    // agar produk dengan harga per item berbeda (mis. 3333 & 3334) dihitung benar,
-                                                    // konsisten dengan FinanceOffline::recalculateNominal()
+                                                    // Sum subtotal dari setiap offline_sale_item unik, bukan re-kalkulasi
+                                                    // dari basePrice * totalQty, agar item se-produk dengan unit_price
+                                                    // berbeda tidak kehilangan selisihnya.
                                                     $totalSubTotal = 0;
                                                     $processedSubtotalItemIds = [];
-                                                    foreach($productItems as $item) {
-                                                        $saleItem = $item->offlineSaleItem;
-                                                        if (!$saleItem || in_array($saleItem->id, $processedSubtotalItemIds)) {
+                                                    foreach($productItems as $subItem) {
+                                                        $subSaleItem = $subItem->offlineSaleItem;
+                                                        if(!$subSaleItem) {
                                                             continue;
                                                         }
-                                                        $processedSubtotalItemIds[] = $saleItem->id;
-                                                        $totalSubTotal += $saleItem->subtotal ?? 0;
+                                                        if(in_array($subSaleItem->id, $processedSubtotalItemIds, true)) {
+                                                            continue;
+                                                        }
+                                                        $processedSubtotalItemIds[] = $subSaleItem->id;
+
+                                                        $itemSubtotal = $subSaleItem->subtotal ?? 0;
+                                                        if($itemSubtotal <= 0) {
+                                                            // Fallback: subtotal belum terisi (data lama), hitung dari
+                                                            // unit_price * qty (qty dari barang_keluar) dikurangi diskon.
+                                                            $itemQty = 0;
+                                                            foreach($productItems as $bk) {
+                                                                if($bk->offlineSaleItem && $bk->offlineSaleItem->id === $subSaleItem->id) {
+                                                                    $itemQty += $bk->qty ?? 0;
+                                                                }
+                                                            }
+                                                            $currentTotal = ($subSaleItem->unit_price ?? 0) * $itemQty;
+
+                                                            for($i = 1; $i <= 5; $i++) {
+                                                                $percentField = "discount_percent_" . $i;
+                                                                $discountPercent = $subSaleItem->$percentField ?? 0;
+                                                                if($discountPercent > 0) {
+                                                                    $currentTotal -= $currentTotal * ($discountPercent / 100);
+                                                                    $currentTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($currentTotal);
+                                                                }
+                                                            }
+                                                            for($i = 1; $i <= 5; $i++) {
+                                                                $amountField = "discount_amount_" . $i;
+                                                                $discountAmount = $subSaleItem->$amountField ?? 0;
+                                                                if($discountAmount > 0) {
+                                                                    $currentTotal -= ($discountAmount * $itemQty);
+                                                                    $currentTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($currentTotal);
+                                                                }
+                                                            }
+
+                                                            $itemSubtotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($currentTotal);
+                                                        }
+
+                                                        $totalSubTotal += $itemSubtotal;
                                                     }
                                                     $totalSubTotal = \App\Helpers\NumberFormatter::roundToTwoDecimals($totalSubTotal);
                                                     

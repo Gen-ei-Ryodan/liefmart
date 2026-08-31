@@ -1,5 +1,21 @@
 # CHANGELOG.md
 
+## fix/bug-livemart-v2 (merged ke main)
+
+### Bug Fixes & Refactor
+- **Retur konsisten full/sebagian** — perbaiki konsistensi logika retur full vs sebagian di semua alur (finance analytics, export mapped, controller retur).
+- **Retur lintas kategori** — relasi retur pakai `withoutGlobalScope(mainCategory)` supaya tidak null saat session kategori berbeda.
+- **Finance offline single source of truth** — tambah `FinanceOfflineCalculator` service; hapus duplikasi perhitungan di `FinanceOfflineController` & export.
+- **Race condition** — tambah `lockForUpdate` pada kalkulasi finance retur.
+- **Anti hardcode** — `resolvePlatform` shopee2/tiktok2 lookup nama dinamis; ganti hardcode `main_category_id` di middleware, command import, dan seeder dengan `MainCategoryHelper`.
+- **Route cleanup** — bersihkan route mati di analytics; amankan API master (auth) dan database restore.
+
+### File Baru
+- `app/Services/FinanceOfflineCalculator.php`
+- `shared/src/Helpers/MainCategoryHelper.php`
+
+---
+
 ## v1.0 (Initial Build)
 
 ### Tech Stack Decisions
