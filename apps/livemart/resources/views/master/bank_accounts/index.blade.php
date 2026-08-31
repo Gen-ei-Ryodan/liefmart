@@ -3,45 +3,40 @@
 @section('title', 'Daftar Rekening Bank')
 
 @section('content')
-<div class="container-fluid">
-    <div class="ds-page-header">
-        <h1 class="text-gradient">Daftar Rekening Bank</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Rekening Bank</li>
-            </ol>
-        </nav>
-    </div>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row mb-3">
         <div class="col-12">
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle mr-2"></i> 
-                <strong>Informasi:</strong> Rekening bank yang ditandai sebagai "Aktif" akan ditampilkan pada invoice saat dicetak.
-                Hanya satu rekening bank yang dapat diaktifkan dalam sistem.
+            <div class="alert alert-info alert-dismissible fade show shadow-sm rounded-3">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Informasi:</strong>&nbsp;Rekening bank yang ditandai sebagai "Aktif" akan ditampilkan pada invoice saat dicetak. Hanya satu rekening bank yang dapat diaktifkan dalam sistem.
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
-                <div class="ds-card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-university text-primary mr-2"></i> Daftar Rekening Bank
-                        </h5>
-                        <a href="{{ route('bank-accounts.create') }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Tambah Rekening Bank
-                        </a>
-                    </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-university me-2"></i>Daftar Rekening Bank
+                    </h5>
+                    <a href="{{ route('bank-accounts.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                        <i class="fas fa-plus me-1"></i> Tambah Rekening Bank
+                    </a>
                 </div>
-                <div class="card-body">
+
+                <div class="card-body p-4">
                     @if (session('success'))
-                        <div class="alert alert-success alert-dismissible fade show">
-                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <h5><i class="icon fas fa-check"></i> Sukses!</h5>
-                            {{ session('success') }}
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Sukses!</strong>
+                            </div>
+                            <p class="mb-0 mt-1">{{ session('success') }}</p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 

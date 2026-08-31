@@ -1,21 +1,22 @@
 @extends('layouts.app')
 
+@section('title', 'Database Restore')
+
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fas fa-database me-2"></i>Database Restore
-                        </h5>
-                        <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left me-1"></i> Kembali
-                        </a>
-                    </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-database me-2"></i>Database Restore
+                    </h5>
+                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-secondary rounded-pill px-3">
+                        <i class="fas fa-arrow-left me-1"></i> Kembali
+                    </a>
                 </div>
-                <div class="card-body">
+
+                <div class="card-body p-4">
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             <i class="fas fa-check-circle me-2"></i>

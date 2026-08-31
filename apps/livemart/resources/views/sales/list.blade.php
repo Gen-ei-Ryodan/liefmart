@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Daftar Penjualan')
+
 @section('content')
     <script>
         // Immediate execution script to enforce table height
@@ -16,35 +18,25 @@
             });
         })();
     </script>
-    <div class="container-fluid">
+    <div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
         <div class="row">
             <div class="col-md-12">
-                <div class="ds-page-header">
-                    <div>
-                        <h1 class="text-gradient">Daftar Penjualan</h1>
-                        <nav aria-label="breadcrumb">
-                            <ol class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('sales.index') }}">Menu Penjualan</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">Daftar Penjualan</li>
-                            </ol>
-                        </nav>
-                    </div>
-                    <div>
-                        <a href="{{ route('sales.choose-type') }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-plus"></i> Tambah Penjualan Baru
-                        </a>
-                        <button class="btn btn-sm btn-outline-secondary" id="toggleFilterBtn">
-                            <i class="fas fa-filter"></i> Filter
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="m-0">Daftar Penjualan</h5>
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="m-0 fw-bold text-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Daftar Penjualan
+                        </h5>
+                        <div>
+                            <a href="{{ route('sales.choose-type') }}" class="btn btn-sm btn-primary me-2">
+                                <i class="fas fa-plus me-1"></i> Tambah Penjualan Baru
+                            </a>
+                            <button class="btn btn-sm btn-outline-primary" id="toggleFilterBtn">
+                                <i class="fas fa-filter me-1"></i> Filter
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div id="filterSection" class="ds-filter-card" style="display: none;">
                             <form action="{{ route('sales.list') }}" method="GET" id="filterForm">
                                 <div class="row g-3">

@@ -1,51 +1,68 @@
 @extends('layouts.app')
 
+@section('title', 'Daftar Penjualan Offline')
+
 @section('content')
 @php
     use Shared\Helpers\NumberFormatter;
 @endphp
-<div class="container-fluid">
-    <div class="ds-page-header">
-        <div>
-            <h1 class="text-gradient">Daftar Penjualan Offline</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('sales.index') }}">Menu Penjualan</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Penjualan Offline</li>
-                </ol>
-            </nav>
-            <p class="text-muted mb-0">Kategori: {{ session('main_category_name') }}</p>
-        </div>
-        <a href="{{ route('sales.offline.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Tambah Penjualan Baru
-        </a>
-    </div>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-store me-2"></i>Daftar Penjualan Offline
+                    </h5>
+                    <div>
+                        <a href="{{ route('sales.offline.create') }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i> Tambah Penjualan Baru
+                        </a>
+                    </div>
+                </div>
 
-    <div class="ds-filter-card">
-        <div class="ds-filter-title">Filter Pencarian</div>
-        <form action="{{ route('sales.offline.list') }}" method="GET" class="row g-3">
-                <div class="col-md-3">
-                    <label for="date_start" class="form-label">Tanggal Mulai</label>
-                    <input type="date" class="form-control" id="date_start" name="date_start" value="{{ request('date_start') }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="date_end" class="form-label">Tanggal Akhir</label>
-                    <input type="date" class="form-control" id="date_end" name="date_end" value="{{ request('date_end') }}">
-                </div>
-                <div class="col-md-3">
-                    <label for="surat_jalan_number" class="form-label">Nomor Surat Jalan</label>
-                    <input type="text" class="form-control" id="surat_jalan_number" name="surat_jalan_number" value="{{ request('surat_jalan_number') }}" placeholder="Cari nomor surat jalan...">
-                </div>
-                <div class="col-md-3">
-                    <label for="No_PO" class="form-label">Nomor PO</label>
-                    <input type="text" class="form-control" id="No_PO" name="No_PO" value="{{ request('No_PO') }}" placeholder="Cari nomor PO...">
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="{{ route('sales.offline.list') }}" class="btn btn-outline-secondary">Reset</a>
-                </div>
-            </form>
-    </div>
+                <div class="card-body p-4">
+                    <!-- Filter Card -->
+                    <div class="card bg-light mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="fas fa-filter me-2"></i> Filter Pencarian</h6>
+                                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="collapse show" id="filterCollapse">
+                            <div class="card-body py-3">
+                                <form action="{{ route('sales.offline.list') }}" method="GET" class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="date_start" class="form-label small fw-medium">Tanggal Mulai</label>
+                                        <input type="date" class="form-control" id="date_start" name="date_start" value="{{ request('date_start') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="date_end" class="form-label small fw-medium">Tanggal Akhir</label>
+                                        <input type="date" class="form-control" id="date_end" name="date_end" value="{{ request('date_end') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="surat_jalan_number" class="form-label small fw-medium">Nomor Surat Jalan</label>
+                                        <input type="text" class="form-control" id="surat_jalan_number" name="surat_jalan_number" value="{{ request('surat_jalan_number') }}" placeholder="Cari nomor surat jalan...">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="No_PO" class="form-label small fw-medium">Nomor PO</label>
+                                        <input type="text" class="form-control" id="No_PO" name="No_PO" value="{{ request('No_PO') }}" placeholder="Cari nomor PO...">
+                                    </div>
+                                    <div class="col-md-12 d-flex align-items-end justify-content-center mt-3">
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4 me-2">
+                                            <i class="fas fa-search me-2"></i> Cari
+                                        </button>
+                                        <a href="{{ route('sales.offline.list') }}" class="btn btn-outline-primary rounded-pill px-4">
+                                            <i class="fas fa-redo me-2"></i> Reset
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
 
     <!-- Summary Cards -->
     <div class="row mb-4">
@@ -214,6 +231,9 @@
             </div>
         </div>
         @endif
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

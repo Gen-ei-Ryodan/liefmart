@@ -1,26 +1,27 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="ds-page-header">
-    <div>
-        <h1 class="text-gradient">{{ __('Daftar Barang Penjualan Offline') }}</h1>
-    </div>
-    <div>
-        <a href="{{ route('finance.offline.invoices') }}" class="btn btn-sm btn-outline-primary me-2">
-            <i class="fas fa-list-alt me-1"></i> List Invoice
-        </a>
-        <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-home me-1"></i> Dashboard
-        </a>
-    </div>
-</div>
+@section('title', 'Daftar Barang Penjualan Offline')
 
-<div class="container-fluid px-0">
+@section('content')
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-12">
             <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Daftar Barang Penjualan Offline
+                    </h5>
+                    <div>
+                        <a href="{{ route('finance.offline.invoices') }}" class="btn btn-sm btn-outline-primary me-2">
+                            <i class="fas fa-list-alt me-1"></i> List Invoice
+                        </a>
+                        <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-home me-1"></i> Dashboard
+                        </a>
+                    </div>
+                </div>
 
-                <div class="card-body">
+                <div class="card-body p-4">
                     <!-- Session Messages -->
                     @if(session('success') || session('error'))
                         <div class="alert alert-{{ session('success') ? 'success' : 'danger' }} alert-dismissible fade show" role="alert">

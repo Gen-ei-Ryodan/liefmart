@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Daftar Stok Barang')
+
 @section('content')
 <script>
     // Immediate execution script to enforce table height
@@ -16,33 +18,35 @@
         });
     })();
 </script>
-<div class="container-fluid">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-12">
-            <!-- Header Section dengan styling yang lebih baik -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 {{ isset($isDamaged) && $isDamaged ? 'text-danger' : 'text-primary' }} fw-bold">
-                    <i class="fas {{ isset($isDamaged) && $isDamaged ? 'fa-exclamation-triangle' : 'fa-boxes' }} me-2"></i> 
-                    {{ isset($isDamaged) && $isDamaged ? 'Daftar Barang Rusak di Gudang' : 'Daftar Stok Barang di Gudang' }}
-                </h1>
-                <div>
-                    @if(isset($isDamaged) && $isDamaged)
-                        <a href="{{ route('warehouse.stock.list') }}" class="btn btn-primary shadow-sm me-2">
-                            <i class="fas fa-boxes me-1"></i> Lihat Stok Normal
-                        </a>
-                        <a href="{{ route('warehouse.stock.export', array_merge(request()->except(['page', 'per_page']), ['is_damaged' => true])) }}" class="btn btn-danger shadow-sm">
-                            <i class="fas fa-file-excel me-1"></i> Export Excel (Barang Rusak)
-                        </a>
-                    @else
-                        <a href="{{ route('warehouse.stock.damaged') }}" class="btn btn-danger shadow-sm me-2">
-                            <i class="fas fa-exclamation-triangle me-1"></i> Lihat Barang Rusak
-                        </a>
-                        <a href="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-success shadow-sm">
-                            <i class="fas fa-file-excel me-1"></i> Export Excel
-                        </a>
-                    @endif
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold {{ isset($isDamaged) && $isDamaged ? 'text-danger' : 'text-primary' }}">
+                        <i class="fas {{ isset($isDamaged) && $isDamaged ? 'fa-exclamation-triangle' : 'fa-boxes' }} me-2"></i>
+                        {{ isset($isDamaged) && $isDamaged ? 'Daftar Barang Rusak di Gudang' : 'Daftar Stok Barang di Gudang' }}
+                    </h5>
+                    <div>
+                        @if(isset($isDamaged) && $isDamaged)
+                            <a href="{{ route('warehouse.stock.list') }}" class="btn btn-sm btn-primary me-2">
+                                <i class="fas fa-boxes me-1"></i> Lihat Stok Normal
+                            </a>
+                            <a href="{{ route('warehouse.stock.export', array_merge(request()->except(['page', 'per_page']), ['is_damaged' => true])) }}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
+                            </a>
+                        @else
+                            <a href="{{ route('warehouse.stock.damaged') }}" class="btn btn-sm btn-danger me-2">
+                                <i class="fas fa-exclamation-triangle me-1"></i> Lihat Barang Rusak
+                            </a>
+                            <a href="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
+                            </a>
+                        @endif
+                    </div>
                 </div>
-            </div>
+
+                <div class="card-body p-4">
 
             <!-- Filter Form dengan design modern -->
             <div class="card shadow-sm mb-4 border-0 rounded-3 {{ isset($isDamaged) && $isDamaged ? 'border-danger border' : '' }}">
@@ -513,6 +517,8 @@
             </div>
             @endif
             <!-- End of Returns Information Section -->
+                </div>
+            </div>
         </div>
     </div>
 </div>

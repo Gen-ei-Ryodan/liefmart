@@ -277,20 +277,21 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1 fw-bold">Mapping Produk</h2>
-            <p class="text-muted mb-0">Kelola mapping produk platform dengan produk master</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('master.mapping.export.excel', request()->query()) }}" class="btn btn-success">
-                <i class="fas fa-file-excel me-2"></i> Export All
-            </a>
-            <a href="{{ route('master.mapping.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i> Tambah Mapping
-            </a>
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="m-0 fw-bold text-primary">
+                <i class="fas fa-project-diagram me-2"></i>Mapping Produk
+            </h5>
+            <div class="d-flex gap-2">
+                <a href="{{ route('master.mapping.export.excel', request()->query()) }}" class="btn btn-sm btn-success rounded-pill px-3">
+                    <i class="fas fa-file-excel me-1"></i> Export All
+                </a>
+                <a href="{{ route('master.mapping.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <i class="fas fa-plus me-1"></i> Tambah Mapping
+                </a>
+            </div>
         </div>
     </div>
 

@@ -1,35 +1,41 @@
 @extends('layouts.app')
 
+@section('title', 'Data Brand')
+
 @section('content')
-<div class="container-fluid py-4">
-    <div class="ds-page-header">
-        <h1 class="text-gradient">Data Brand</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Brand</li>
-            </ol>
-        </nav>
-    </div>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
-                <div class="ds-card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">Data Brand</h6>
-                    <a href="{{ route('brands.create') }}" class="btn btn-sm btn-primary">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-tag me-2"></i>Data Brand
+                    </h5>
+                    <a href="{{ route('brands.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
                         <i class="fas fa-plus me-1"></i> Tambah Brand
                     </a>
                 </div>
-                <div class="card-body px-0 pt-0 pb-2">
+
+                <div class="card-body p-4">
                     @if(session('success'))
-                        <div class="alert alert-success mx-4 mt-3">
-                            {{ session('success') }}
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Sukses!</strong>
+                            </div>
+                            <p class="mb-0 mt-1">{{ session('success') }}</p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
                     
                     @if(session('error'))
-                        <div class="alert alert-danger mx-4 mt-3">
-                            {{ session('error') }}
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Error!</strong>
+                            </div>
+                            <p class="mb-0 mt-1">{{ session('error') }}</p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
 

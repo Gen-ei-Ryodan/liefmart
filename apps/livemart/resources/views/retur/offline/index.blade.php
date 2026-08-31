@@ -1,48 +1,61 @@
 @extends('layouts.app')
 
+@section('title', 'Daftar Retur Penjualan Offline')
+
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-md-12">
-            <div class="card">
-                <div class="ds-card-header">
-                    <h4 class="card-title">Daftar Retur Penjualan Offline</h4>
-                    <div class="card-tools">
-                        <a href="{{ route('retur-offline.create') }}" class="btn btn-primary me-2">
-                            <i class="fas fa-plus"></i> Buat Retur Baru
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-store-alt me-2"></i>Daftar Retur Penjualan Offline
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('retur-offline.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                            <i class="fas fa-plus me-1"></i> Buat Retur Baru
                         </a>
-                        <a href="{{ route('retur-offline.export') }}" class="btn btn-success">
-                            <i class="fas fa-file-excel"></i> Export Excel
+                        <a href="{{ route('retur-offline.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
+                            <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                     </div>
                 </div>
-                <div class="card-body">
+
+                <div class="card-body p-4">
                     @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Sukses!</strong>
+                        </div>
+                        <p class="mb-0 mt-1">{{ session('success') }}</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     @endif
 
                     @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <strong>Error!</strong>
+                        </div>
+                        <p class="mb-0 mt-1">{{ session('error') }}</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     @endif
 
                     <!-- Filter Section -->
-                    <div class="card mb-4">
-                        <div class="ds-card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-filter mr-2"></i>Filter Pencarian
-                            </h6>
+                    <div class="card bg-light mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="fas fa-filter me-2"></i> Filter Pencarian</h6>
+                                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="collapse show" id="filterCollapse">
+                            <div class="card-body py-3">
                             <form method="GET" action="{{ route('retur-offline.index') }}" id="filterForm">
                                 <div class="row mb-4">
                                     <div class="col-md-3">
@@ -112,6 +125,7 @@
                                     </div>
                                 </div>
                             </form>
+                            </div>
                         </div>
                     </div>
 

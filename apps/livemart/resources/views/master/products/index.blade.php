@@ -1,23 +1,16 @@
 @extends('layouts.app')
 
+@section('title', 'Data Produk')
+
 @section('content')
-<div class="container-fluid py-4">
-    <div class="ds-page-header">
-        <h1 class="text-gradient">Data Produk</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Produk</li>
-            </ol>
-        </nav>
-    </div>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4">
-                <div class="ds-card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-boxes me-2"></i>Data Produk
-                    </h6>
+                    </h5>
                     @php
                         $exportQuery = request()->query();
                         $exportSuffix = count($exportQuery) ? ('?' . http_build_query($exportQuery)) : '';
@@ -27,7 +20,7 @@
                     @endphp
                     <div class="d-flex gap-2">
                         <div class="dropdown">
-                            <button class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-file-export me-1"></i> Export
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
