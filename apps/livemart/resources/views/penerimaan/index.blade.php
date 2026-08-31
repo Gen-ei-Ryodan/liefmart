@@ -4,76 +4,73 @@
 
 @section('content')
 <div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="fw-bold mb-1 text-gradient">Data Penerimaan</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Penerimaan</li>
-                </ol>
-            </nav>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('penerimaan.create') }}" class="btn btn-primary rounded-pill px-4">
-                <i class="fas fa-plus me-2"></i> Tambah Penerimaan
-            </a>
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-success rounded-pill px-4 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-file-excel me-2"></i> Export Excel
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" onclick="exportData()">
-                        <i class="fas fa-table me-2"></i> Export Ringkasan
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" onclick="exportDetailData()">
-                        <i class="fas fa-list-alt me-2"></i> Export Detail per Barang
-                    </a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-truck-loading me-2"></i>Data Penerimaan
+                    </h5>
+                    <div>
+                        <a href="{{ route('penerimaan.create') }}" class="btn btn-sm btn-primary me-2">
+                            <i class="fas fa-plus me-1"></i> Tambah Penerimaan
+                        </a>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="exportData()">
+                                    <i class="fas fa-table me-2"></i> Export Ringkasan
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportDetailData()">
+                                    <i class="fas fa-list-alt me-2"></i> Export Detail per Barang
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Alert -->
-    @if(request('success'))
-    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
-        <i class="fas fa-check-circle me-2"></i>
-        Berhasil disimpan.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
+                <div class="card-body p-4">
+                    <!-- Alert -->
+                    @if(request('success'))
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Berhasil disimpan.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    @endif
 
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
-        <i class="fas fa-check-circle me-2"></i>
-        {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
+                    @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        {{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    @endif
 
-    @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
-        <i class="fas fa-exclamation-circle me-2"></i>
-        {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
+                    @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    @endif
 
-    <!-- Filter Card -->
-    <div class="card border-0 shadow-sm rounded-3 mb-4">
-        <div class="card-header d-flex align-items-center py-3 bg-primary text-white rounded-top-3">
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <h6 class="mb-0 fw-semibold"><i class="fas fa-filter me-2"></i> Filter & Pencarian</h6>
-                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
-        </div>
-        <div class="collapse show" id="filterCollapse">
-            <div class="card-body p-4">
-                <form action="{{ route('penerimaan.index') }}" method="GET">
-                    <div class="row g-3">
+                    <!-- Filter Card -->
+                    <div class="card bg-light mb-4 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold"><i class="fas fa-filter me-2"></i> Filter & Pencarian</h6>
+                                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="collapse show" id="filterCollapse">
+                            <div class="card-body py-3">
+                                <form action="{{ route('penerimaan.index') }}" method="GET">
+                                    <div class="row g-3">
                         <!-- Kode Penerimaan Filter -->
                         <div class="col-md-4">
                             <label for="kode" class="form-label small fw-medium">Kode Penerimaan</label>
@@ -143,15 +140,9 @@
         </div>
     </div>
 
-    <!-- Card -->
-    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-        <div class="card-header d-flex align-items-center py-3">
-            <i class="fas fa-truck-loading text-primary me-2"></i>
-            <h5 class="mb-0 fw-semibold">Daftar Penerimaan Barang</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive disable-fixed-scrollbar ds-table-container">
-                <table class="table table-hover">
+    <!-- Table -->
+    <div class="table-responsive disable-fixed-scrollbar ds-table-container">
+        <table class="table table-hover">
                     <thead class="table-light sticky-top">
                         <tr>
                             <th scope="col" class="text-center">#</th>
@@ -242,19 +233,19 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-        </div>
-        <div class="card-footer bg-white border-top-0">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="text-muted small">
-                    Menampilkan <span class="fw-semibold">{{ $penerimaan->firstItem() ?? 0 }}</span> - 
-                    <span class="fw-semibold">{{ $penerimaan->lastItem() ?? 0 }}</span> dari 
-                    <span class="fw-semibold">{{ $penerimaan->total() }}</span> data
+                    </div>
                 </div>
-                <div>
-                    @if ($penerimaan->hasPages())
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-end">
+                <div class="card-footer bg-white border-top-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                            Menampilkan <span class="fw-semibold">{{ $penerimaan->firstItem() ?? 0 }}</span> - 
+                            <span class="fw-semibold">{{ $penerimaan->lastItem() ?? 0 }}</span> dari 
+                            <span class="fw-semibold">{{ $penerimaan->total() }}</span> data
+                        </div>
+                        <div>
+                            @if ($penerimaan->hasPages())
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination pagination-sm mb-0 flex-wrap justify-content-end">
                             {{-- Previous Page Link --}}
                             @if ($penerimaan->onFirstPage())
                                 <li class="page-item disabled">
@@ -308,6 +299,8 @@
                         </ul>
                     </nav>
                     @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
