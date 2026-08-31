@@ -1,20 +1,33 @@
 @extends('layouts.app')
 
+@section('title', 'Tambah User Baru')
+
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">
-                        <i class="fas fa-user-plus me-2"></i>
-                        Tambah User Baru
-                    </h4>
-                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-1"></i>Kembali
-                    </a>
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Tambah User Baru</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.users.index') }}" class="text-decoration-none">User Management</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Tambah User</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> Kembali
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header d-flex align-items-center py-3">
+                    <i class="fas fa-user-plus text-primary me-2"></i>
+                    <h5 class="mb-0 fw-semibold">Tambah User Baru</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form action="{{ route('admin.users.store') }}" method="POST" id="userForm">
                         @csrf
                         
@@ -151,11 +164,11 @@
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
-                                        <i class="fas fa-times me-1"></i>Batal
+                                    <a href="{{ route('admin.users.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                                        <i class="fas fa-times me-2"></i>Batal
                                     </a>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-save me-1"></i>Simpan User
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                        <i class="fas fa-save me-2"></i>Simpan User
                                     </button>
                                 </div>
                             </div>

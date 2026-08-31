@@ -1,28 +1,33 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Produk')
+
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Edit Produk</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('products.index') }}" class="text-decoration-none">Produk</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('products.initial-price.show', $product->id) }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fas fa-tag me-2"></i> Harga Awal
+            </a>
+            <a href="{{ route('products.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i> Kembali
+            </a>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden">
-                <div class="card-header bg-gradient-light d-flex justify-content-between align-items-center py-3 px-4">
-                    <div>
-                        <h5 class="mb-0 fw-semibold text-primary">
-                            <i class="fas fa-edit me-2"></i>Edit Produk
-                        </h5>
-                        <div class="text-muted text-sm mt-1">
-                            {{ $product->name }} • {{ $product->sku ?? '-' }}
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('products.initial-price.show', $product->id) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm">
-                            <i class="fas fa-tag me-1"></i> Harga Awal
-                        </a>
-                        <a href="{{ route('products.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm">
-                            <i class="fas fa-arrow-left me-1"></i> Kembali
-                        </a>
-                    </div>
-                </div>
                 <div class="card-body p-4">
                     <form action="{{ route('products.update', $product->id) }}" method="POST">
                         @csrf

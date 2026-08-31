@@ -1,10 +1,18 @@
 @extends('layouts.app')
 
+@section('title', 'Pilih Platform Keuangan')
+
 @section('content')
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-12 text-center">
-            <h1 class="fw-bold mb-2">Pilih Platform Keuangan</h1>
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Pilih Platform Keuangan</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Keuangan</li>
+                </ol>
+            </nav>
             <p class="text-muted mb-0">Pilih platform untuk melihat dan mengelola data keuangan</p>
         </div>
     </div>

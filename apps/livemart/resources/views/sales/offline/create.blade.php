@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Tambah Penjualan Offline')
+
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css">
 <style>
@@ -35,18 +37,21 @@
 @endpush
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="ds-page-header">
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="text-gradient">Tambah Penjualan Offline</h1>
+            <h1 class="fw-bold mb-1 text-gradient">Tambah Penjualan Offline</h1>
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('sales.index') }}">Menu Penjualan</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('sales.offline.list') }}">Penjualan Offline</a></li>
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('sales.index') }}" class="text-decoration-none">Menu Penjualan</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('sales.offline.list') }}" class="text-decoration-none">Penjualan Offline</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Tambah</li>
                 </ol>
             </nav>
         </div>
+        <a href="{{ route('sales.offline.list') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-times me-2"></i> Batal
+        </a>
     </div>
 
     <div class="row">

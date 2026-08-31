@@ -1,37 +1,45 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Pengguna')
+
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center mb-4">
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-semibold">Edit Pengguna</h4>
-            <p class="text-muted mb-0">Edit data pengguna</p>
+            <h1 class="fw-bold mb-1 text-gradient">Edit Pengguna</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('users.index') }}" class="text-decoration-none">User Management</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit User</li>
+                </ol>
+            </nav>
         </div>
-        <div class="btn-toolbar">
-            <div class="btn-group me-2">
-                <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Kembali
-                </a>
-            </div>
-        </div>
+        <a href="{{ route('users.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> Kembali
+        </a>
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
+        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="card border-0">
-        <div class="card-body">
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header d-flex align-items-center py-3">
+            <i class="fas fa-user-edit text-primary me-2"></i>
+            <h5 class="mb-0 fw-semibold">Edit Pengguna</h5>
+        </div>
+        <div class="card-body p-4">
             <form action="{{ route('users.update', $user) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -81,8 +89,8 @@
                 </div>
 
                 <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i> Simpan Perubahan
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-save me-2"></i> Simpan Perubahan
                     </button>
                 </div>
             </form>

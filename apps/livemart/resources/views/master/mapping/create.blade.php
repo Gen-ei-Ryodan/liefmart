@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Tambah Mapping Produk')
+
 @push('styles')
 @include('master.mapping.styles')
 
@@ -226,13 +228,24 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <div class="form-card">
-        <div class="form-header">
-            <h2><i class="fas fa-link me-2"></i>Tambah Mapping Produk Baru</h2>
-            <p>Hubungkan produk platform dengan produk master untuk manajemen inventori yang lebih baik</p>
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Tambah Mapping Produk</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('master.mapping.index') }}" class="text-decoration-none">Mapping Produk</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Tambah Baru</li>
+                </ol>
+            </nav>
         </div>
-        
+        <a href="{{ route('master.mapping.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> Kembali
+        </a>
+    </div>
+
+    <div class="form-card">
         <div class="form-body">
             <form action="{{ route('master.mapping.store') }}" method="POST" id="mappingForm">
                 @csrf

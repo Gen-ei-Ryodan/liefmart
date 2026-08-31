@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Penerimaan Barang')
+
 @section('content')
     <div class="container-fluid animate__animated animate__fadeIn animate__faster">
         <!-- Basic form setup - no TomSelect -->

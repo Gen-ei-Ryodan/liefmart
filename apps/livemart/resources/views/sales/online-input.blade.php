@@ -1,16 +1,35 @@
 @extends('layouts.app')
 
+@section('title', 'Input Manual Penjualan')
+
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Input Manual Penjualan - {{ $platformDisplayName ?? $platform }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('sales.index') }}" class="text-decoration-none">Menu Penjualan</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('sales.online') }}" class="text-decoration-none">Penjualan Online</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Input Manual ({{ $platformDisplayName ?? $platform }})</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{{ route('sales.online') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> Kembali
+        </a>
+    </div>
+
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Input Manual Penjualan - {{ $platformDisplayName ?? $platform }}</h5>
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header d-flex align-items-center py-3">
+                    <i class="fas fa-file-invoice text-primary me-2"></i>
+                    <h5 class="mb-0 fw-semibold">Input Manual Penjualan - {{ $platformDisplayName ?? $platform }}</h5>
                 </div>
-                
-                <div class="card-body">
-                    <div class="row mb-4">
+
+                <div class="card-body p-4">
+                    <div class="row mb-4 d-none">
                         <div class="col-12">
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb">

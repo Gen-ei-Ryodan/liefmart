@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Mapping Produk')
+
 @push('styles')
 @include('master.mapping.styles')
 
@@ -391,24 +393,29 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <div class="form-card">
-        <div class="form-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2><i class="fas fa-edit me-2"></i>Edit Mapping Produk</h2>
-                    <p>Kelola dan update mapping produk platform dengan produk master</p>
-                </div>
-                <div>
-                    <a href="{{ route('master.mapping.version-history', $mapping->platform_product_id) }}" 
-                       class="btn btn-light btn-sm">
-                        <i class="fas fa-history me-1"></i>
-                        Riwayat Versi
-                    </a>
-                </div>
-            </div>
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Edit Mapping Produk</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('master.mapping.index') }}" class="text-decoration-none">Mapping Produk</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                </ol>
+            </nav>
         </div>
-        
+        <div class="d-flex gap-2">
+            <a href="{{ route('master.mapping.version-history', $mapping->platform_product_id) }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fas fa-history me-2"></i> Riwayat Versi
+            </a>
+            <a href="{{ route('master.mapping.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i> Kembali
+            </a>
+        </div>
+    </div>
+
+    <div class="form-card">
         <div class="form-body">
             <!-- Alert Messages -->
             @if(session('success'))

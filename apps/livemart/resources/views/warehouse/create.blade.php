@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Pindahkan Barang ke Gudang')
+
 @section('content')
     <script>
         // Immediate execution script to enforce table height
@@ -16,19 +18,37 @@
             });
         })();
     </script>
-    <div class="container-fluid">
+    <div class="container-fluid animate__animated animate__fadeIn animate__faster">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="fw-bold mb-1 text-gradient">Pindahkan Barang ke Gudang</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('warehouse.index') }}" class="text-decoration-none">Warehouse</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Item Transfers</li>
+                    </ol>
+                </nav>
+            </div>
+            <a href="{{ route('warehouse.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i> Kembali
+            </a>
+        </div>
+
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Pindahkan Barang ke Gudang A</h3>
+                <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                    <div class="card-header d-flex align-items-center py-3">
+                        <i class="fas fa-warehouse text-primary me-2"></i>
+                        <h5 class="mb-0 fw-semibold">Pindahkan Barang ke Gudang A</h5>
                     </div>
                     <form action="{{ route('warehouse.store') }}" method="POST" id="transfer-form">
                         @csrf
-                        <div class="card-body">
+                        <div class="card-body p-4">
                             @if (session('error'))
-                                <div class="alert alert-danger">
-                                    {{ session('error') }}
+                                <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                                    <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                 </div>
                             @endif
 
@@ -81,12 +101,12 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
-                                <i class="fas fa-save"></i> Simpan Perpindahan
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="submit-btn" disabled>
+                                <i class="fas fa-save me-2"></i> Simpan Perpindahan
                             </button>
-                            <a href="{{ route('warehouse.index') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Kembali
+                            <a href="{{ route('warehouse.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                                <i class="fas fa-times me-2"></i> Batal
                             </a>
                         </div>
                     </form>

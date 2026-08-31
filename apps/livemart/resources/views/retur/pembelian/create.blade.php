@@ -1,25 +1,33 @@
 @extends('layouts.app')
 
+@section('title', 'Buat Retur Pembelian')
+
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Buat Retur Pembelian Baru</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('retur-pembelian.index') }}" class="text-decoration-none">Purchase Returns</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Buat Baru</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{{ route('retur-pembelian.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-times me-2"></i> Batal
+        </a>
+    </div>
+
     <div class="row">
         <div class="col-md-12">
-            <div class="card">
-                <div class="ds-card-header">
-                    <h4 class="card-title">Buat Retur Pembelian Baru</h4>
-                    <div class="card-tools">
-                        <a href="{{ route('retur-pembelian.index') }}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Kembali
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-body p-4">
                     @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     @endif
 
@@ -142,8 +150,8 @@
                         </div>
 
                         <div class="form-group mt-4 text-right">
-                            <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
-                                <i class="fas fa-save"></i> Simpan Retur
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="submit-btn" disabled>
+                                <i class="fas fa-save me-2"></i> Simpan Retur
                             </button>
                         </div>
                     </form>

@@ -3,30 +3,32 @@
 @section('title', 'Edit User')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box">
-                <div class="page-title-right">
-                    <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.users.index') }}">User Management</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.users.show', $user->id) }}">Detail User</a></li>
-                        <li class="breadcrumb-item active">Edit User</li>
-                    </ol>
-                </div>
-                <h4 class="page-title">Edit User: {{ $user->name }}</h4>
-            </div>
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-gradient">Edit User: {{ $user->name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.users.index') }}" class="text-decoration-none">User Management</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.users.show', $user->id) }}" class="text-decoration-none">Detail User</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit User</li>
+                </ol>
+            </nav>
         </div>
+        <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> Kembali
+        </a>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="header-title">Form Edit User</h4>
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <div class="card-header d-flex align-items-center py-3">
+                    <i class="fas fa-user-edit text-primary me-2"></i>
+                    <h5 class="mb-0 fw-semibold">Form Edit User</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form action="{{ route('admin.users.update', $user->id) }}" method="POST">
                         @csrf
                         @method('PUT')
@@ -158,16 +160,16 @@
 
                         <div class="row">
                             <div class="col-12">
-                                <div class="d-flex justify-content-between">
-                                    <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-secondary">
-                                        <i class="mdi mdi-arrow-left"></i> Kembali
+                                <div class="d-flex justify-content-between flex-wrap gap-2">
+                                    <a href="{{ route('admin.users.show', $user->id) }}" class="btn btn-outline-primary rounded-pill px-4">
+                                        <i class="fas fa-arrow-left me-2"></i> Kembali
                                     </a>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="mdi mdi-content-save"></i> Update User
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                            <i class="fas fa-save me-2"></i> Update User
                                         </button>
-                                        <a href="{{ route('admin.users.index') }}" class="btn btn-light">
-                                            <i class="mdi mdi-close"></i> Batal
+                                        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                                            <i class="fas fa-times me-2"></i> Batal
                                         </a>
                                     </div>
                                 </div>
