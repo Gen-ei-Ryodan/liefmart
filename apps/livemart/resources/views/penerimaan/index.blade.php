@@ -3,7 +3,7 @@
 @section('title', 'Data Penerimaan')
 
 @section('content')
-<div class="container-fluid animate__animated animate__fadeIn animate__faster">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
