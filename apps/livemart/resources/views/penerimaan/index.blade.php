@@ -1,24 +1,26 @@
 @extends('layouts.app')
 
+@section('title', 'Data Penerimaan')
+
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid animate__animated animate__fadeIn animate__faster">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="mb-1 text-gradient">Data Penerimaan</h1>
+            <h1 class="fw-bold mb-1 text-gradient">Data Penerimaan</h1>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Penerimaan</li>
                 </ol>
             </nav>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('penerimaan.create') }}" class="btn btn-primary">
+            <a href="{{ route('penerimaan.create') }}" class="btn btn-primary rounded-pill px-4">
                 <i class="fas fa-plus me-2"></i> Tambah Penerimaan
             </a>
             <div class="btn-group" role="group">
-                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <button type="button" class="btn btn-success rounded-pill px-4 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-file-excel me-2"></i> Export Excel
                 </button>
                 <ul class="dropdown-menu">
@@ -35,7 +37,7 @@
 
     <!-- Alert -->
     @if(request('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
         <i class="fas fa-check-circle me-2"></i>
         Berhasil disimpan.
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -43,7 +45,7 @@
     @endif
 
     @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
         <i class="fas fa-check-circle me-2"></i>
         {{ session('success') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -51,7 +53,7 @@
     @endif
 
     @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
         <i class="fas fa-exclamation-circle me-2"></i>
         {{ session('error') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -59,25 +61,31 @@
     @endif
 
     <!-- Filter Card -->
-    <div class="card mb-4 shadow-sm ds-filter-card">
-        <div class="card-header bg-light py-3">
-            <h6 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i> Filter & Pencarian</h6>
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header d-flex align-items-center py-3 bg-primary text-white rounded-top-3">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <h6 class="mb-0 fw-semibold"><i class="fas fa-filter me-2"></i> Filter & Pencarian</h6>
+                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="true">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
         </div>
-        <div class="card-body">
-            <form action="{{ route('penerimaan.index') }}" method="GET">
-                <div class="row g-3">
-                    <!-- Kode Penerimaan Filter -->
-                    <div class="col-md-4">
-                        <label for="kode" class="form-label small fw-medium">Kode Penerimaan</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="fas fa-barcode"></i></span>
-                            <input type="text" class="form-control" id="kode" name="kode" value="{{ request('kode') }}" placeholder="PNR-000001">
+        <div class="collapse show" id="filterCollapse">
+            <div class="card-body p-4">
+                <form action="{{ route('penerimaan.index') }}" method="GET">
+                    <div class="row g-3">
+                        <!-- Kode Penerimaan Filter -->
+                        <div class="col-md-4">
+                            <label for="kode" class="form-label small fw-medium">Kode Penerimaan</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-barcode"></i></span>
+                                <input type="text" class="form-control" id="kode" name="kode" value="{{ request('kode') }}" placeholder="PNR-000001">
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Nomor PO Filter -->
-                    <div class="col-md-4">
-                        <label for="nomor_po" class="form-label small fw-medium">Nomor PO</label>
+                        
+                        <!-- Nomor PO Filter -->
+                        <div class="col-md-4">
+                            <label for="nomor_po" class="form-label small fw-medium">Nomor PO</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fas fa-file-invoice"></i></span>
                             <input type="text" class="form-control" id="nomor_po" name="nomor_po" value="{{ request('nomor_po') }}" placeholder="Nomor PO">
@@ -123,10 +131,10 @@
                     
                     <!-- Search & Reset Buttons -->
                     <div class="col-md-12 d-flex align-items-end justify-content-center mt-3">
-                        <button type="submit" class="btn btn-primary me-2">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 me-2">
                             <i class="fas fa-search me-2"></i> Cari
                         </button>
-                        <a href="{{ route('penerimaan.index') }}" class="btn btn-outline-secondary">
+                        <a href="{{ route('penerimaan.index') }}" class="btn btn-outline-primary rounded-pill px-4">
                             <i class="fas fa-redo me-2"></i> Reset
                         </a>
                     </div>
@@ -136,9 +144,10 @@
     </div>
 
     <!-- Card -->
-    <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center py-3">
-            <h5 class="mb-0">Daftar Penerimaan Barang</h5>
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header d-flex align-items-center py-3">
+            <i class="fas fa-truck-loading text-primary me-2"></i>
+            <h5 class="mb-0 fw-semibold">Daftar Penerimaan Barang</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive disable-fixed-scrollbar ds-table-container">
@@ -197,22 +206,22 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group" role="group">
-                                        <a href="{{ route('penerimaan.show', $item->id) }}" class="btn btn-sm btn-info me-1" data-bs-toggle="tooltip" title="Detail">
+                                        <a href="{{ route('penerimaan.show', $item->id) }}" class="btn btn-sm btn-outline-info rounded-pill px-2" data-bs-toggle="tooltip" title="Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('penerimaan.print', $item->id) }}" class="btn btn-sm btn-success me-1" data-bs-toggle="tooltip" title="Print" target="_blank">
+                                        <a href="{{ route('penerimaan.print', $item->id) }}" class="btn btn-sm btn-outline-success rounded-pill px-2" data-bs-toggle="tooltip" title="Print" target="_blank">
                                             <i class="fas fa-print"></i>
                                         </a>
                                         @if(Auth::user()->isSuperAdmin())
                                             {{-- Edit button - Hanya superadmin --}}
-                                            <a href="{{ route('penerimaan.edit', $item->id) }}" class="btn btn-sm btn-primary me-1" data-bs-toggle="tooltip" title="Edit">
+                                            <a href="{{ route('penerimaan.edit', $item->id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-2" data-bs-toggle="tooltip" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                         @endif
                                         @if($item->status == 'Unlocated')
                                             {{-- Delete button - Only for superadmin --}}
                                             @if(Auth::check() && Auth::user()->isSuperAdmin())
-                                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="tooltip" title="Hapus" onclick="confirmDelete('{{ $item->id }}', '{{ $item->kode_penerimaan }}')">
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" data-bs-toggle="tooltip" title="Hapus" onclick="confirmDelete('{{ $item->id }}', '{{ $item->kode_penerimaan }}')">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             @endif
@@ -235,7 +244,7 @@
                 </table>
             </div>
         </div>
-        <div class="card-footer">
+        <div class="card-footer bg-white border-top-0">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="text-muted small">
                     Menampilkan <span class="fw-semibold">{{ $penerimaan->firstItem() ?? 0 }}</span> - 
