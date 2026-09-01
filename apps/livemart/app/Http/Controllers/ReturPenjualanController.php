@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -20,6 +21,8 @@ use Carbon\Carbon;
 
 class ReturPenjualanController extends Controller
 {
+    use QueueExport;
+
     /**
      * Calculate the correct price per individual product from order item
      * For paket products, this divides the package price by total package quantity
@@ -1224,7 +1227,7 @@ class ReturPenjualanController extends Controller
 
         $filename = 'retur_penjualan_detail_' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new \App\Exports\ReturPenjualanDetailExport(), $filename);
+        return $this->queueExcelExport(new \App\Exports\ReturPenjualanDetailExport(), $filename, 'Export Retur Penjualan Detail');
     }
 
     /**

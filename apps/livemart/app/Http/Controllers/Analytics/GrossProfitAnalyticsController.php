@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Analytics;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ use App\Models\ReturPenjualanDetail;
 
 class GrossProfitAnalyticsController extends Controller
 {
+    use QueueExport;
     public function grossProfitOfflineReport(Request $request)
     {
         // Set default date range
@@ -449,7 +451,11 @@ class GrossProfitAnalyticsController extends Controller
         // Generate filename
         $filename = 'Gross_Profit_Offline_' . $startDate . '_to_' . $endDate . '.xlsx';
         
-        return Excel::download(new GrossProfitOfflineExport($profitData), $filename);
+        return $this->queueExcelExport(
+            new GrossProfitOfflineExport($profitData),
+            $filename,
+            'Export Gross Profit Offline'
+        );
     }
 
     // ========== HELPER METHODS FROM AnalyticController ==========
@@ -923,7 +929,11 @@ class GrossProfitAnalyticsController extends Controller
                 'sort' => $sortBy
             ];
             
-            return Excel::download(new SalesByPlatformProductExport($platformProductRows, $summary, $filters), $filename);
+            return $this->queueExcelExport(
+                new SalesByPlatformProductExport($platformProductRows, $summary, $filters),
+                $filename,
+                'Export Sales By Platform Product'
+            );
 
         } catch (\Exception $e) {
             \Log::error('Error in exportSalesByPlatformProduct: ' . $e->getMessage());
@@ -951,7 +961,11 @@ class GrossProfitAnalyticsController extends Controller
 
             $filename = 'laporan-penjualan-master-produk-' . date('Y-m-d') . '.xlsx';
             
-            return Excel::download(new SalesByMasterProductExport($productRows, $summary, $filters), $filename);
+            return $this->queueExcelExport(
+                new SalesByMasterProductExport($productRows, $summary, $filters),
+                $filename,
+                'Export Sales By Master Product'
+            );
 
         } catch (\Exception $e) {
             \Log::error('Error in exportSalesByMasterProduct: ' . $e->getMessage());

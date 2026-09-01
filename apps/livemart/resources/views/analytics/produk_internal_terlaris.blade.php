@@ -232,7 +232,7 @@
                         </a>
                     </div>
                     <div class="col-md-2">
-                        <a href="{{ route('analytics.produk-internal-terlaris.export', request()->query()) }}" class="btn btn-success w-100">
+                        <a href="#" data-export="{{ route('analytics.produk-internal-terlaris.export', request()->query()) }}" class="btn btn-success w-100">
                             <i class="bi bi-file-earmark-excel"></i> Export Excel
                         </a>
                     </div>

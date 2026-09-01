@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use App\Models\FinanceOffline;
 use App\Models\BarangKeluar;
 use App\Models\OfflineSale;
@@ -17,6 +18,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class FinanceOfflineController extends Controller
 {
+    use QueueExport;
+
     /**
      * Display a listing of the barang from penjualan offline.
      *
@@ -474,7 +477,7 @@ class FinanceOfflineController extends Controller
 
         $fileName = 'Finance_Offline_Invoices_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
 
-        return Excel::download(new FinanceOfflineInvoiceExport($invoices), $fileName);
+        return $this->queueExcelExport(new FinanceOfflineInvoiceExport($invoices), $fileName, 'Export Finance Offline Invoices');
     }
 
     /**

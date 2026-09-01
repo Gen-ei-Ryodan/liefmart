@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use App\Models\TiktokFinancialTransaction;
 use App\Models\Order;
 use App\Models\Platform;
@@ -22,6 +23,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranTiktokController extends Controller
 {
+    use QueueExport;
+
     public function index(Request $request)
     {
         // Get platform by name (Tiktok Lamourad)
@@ -2021,7 +2024,7 @@ class PembayaranTiktokController extends Controller
     {
         $filename = 'tiktok_finance_analytics_' . date('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new TiktokFinanceAnalyticsExport($request->all()), $filename);
+        return $this->queueExcelExport(new TiktokFinanceAnalyticsExport($request->all()), $filename, 'Export Tiktok Finance Analytics', true);
     }
 
     /**
@@ -2034,7 +2037,7 @@ class PembayaranTiktokController extends Controller
     {
         $filename = 'tiktok_cash_flow_' . date('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new TiktokCashFlowExport($request->all()), $filename);
+        return $this->queueExcelExport(new TiktokCashFlowExport($request->all()), $filename, 'Export Tiktok Cash Flow');
     }
 
     /**

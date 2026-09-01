@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use App\Models\ShopeeFinancialTransaction;
 use App\Models\Order;
 use App\Models\Platform;
@@ -20,6 +21,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranShopeeController extends Controller
 {
+    use QueueExport;
+
     public function index(Request $request)
     {
         // Get platform by name (Shopee Lamourad)
@@ -2027,7 +2030,7 @@ class PembayaranShopeeController extends Controller
     {
         $filename = 'shopee_finance_analytics_' . date('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new ShopeeFinanceAnalyticsExport($request->all()), $filename);
+        return $this->queueExcelExport(new ShopeeFinanceAnalyticsExport($request->all()), $filename, 'Export Shopee Finance Analytics', true);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use App\Models\Order;
 use App\Models\Platform;
 use Illuminate\Http\Request;
@@ -16,6 +17,8 @@ use Shared\Helpers\SecurePathHelper;
 
 class UnpaidOrdersController extends Controller
 {
+    use QueueExport;
+
     /**
      * Display unpaid orders from all platforms
      *
@@ -221,7 +224,7 @@ class UnpaidOrdersController extends Controller
         // Clean up old temp files securely
         SecurePathHelper::cleanupSecureTempFiles();
         
-        return Excel::download(new UnpaidOrdersExport($request->all()), $filename);
+        return $this->queueExcelExport(new UnpaidOrdersExport($request->all()), $filename, 'Export Unpaid Orders');
     }
 
     /**

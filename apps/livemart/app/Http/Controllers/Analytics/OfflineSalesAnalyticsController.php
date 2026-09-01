@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Analytics;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ use App\Exports\OfflineSalesDetailReportExport;
 
 class OfflineSalesAnalyticsController extends Controller
 {
+    use QueueExport;
     private function calculateTotalAfterDiscounts($item)
     {
         $basePrice = (float)($item->unit_price ?? 0);
@@ -554,7 +556,11 @@ class OfflineSalesAnalyticsController extends Controller
         
         $filename = 'penjualan-bulanan-offline-' . $selectedYear . '-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new OfflineMonthlySalesExport($monthlySummary, $yearSummary, $selectedYear, $customerName), $filename);
+        return $this->queueExcelExport(
+            new OfflineMonthlySalesExport($monthlySummary, $yearSummary, $selectedYear, $customerName),
+            $filename,
+            'Export Penjualan Bulanan Offline'
+        );
     }
 
     /**
@@ -649,7 +655,11 @@ class OfflineSalesAnalyticsController extends Controller
         
         $filename = 'penjualan-offline-by-customer-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new OfflineSalesByCustomerExport($customerSummary, $summary, $startDate, $endDate, $customerName), $filename);
+        return $this->queueExcelExport(
+            new OfflineSalesByCustomerExport($customerSummary, $summary, $startDate, $endDate, $customerName),
+            $filename,
+            'Export Penjualan Offline By Customer'
+        );
     }
 
     /**
@@ -743,7 +753,11 @@ class OfflineSalesAnalyticsController extends Controller
         
         $filename = 'penjualan-offline-by-product-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new OfflineSalesByProductExport($productSummary, $summary, $startDate, $endDate, $customerName, $productName), $filename);
+        return $this->queueExcelExport(
+            new OfflineSalesByProductExport($productSummary, $summary, $startDate, $endDate, $customerName, $productName),
+            $filename,
+            'Export Penjualan Offline By Product'
+        );
     }
 
     /**
@@ -850,6 +864,10 @@ class OfflineSalesAnalyticsController extends Controller
         
         $filename = 'laporan-detail-penjualan-offline-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new OfflineSalesDetailReportExport($sales, $summary, $startDate, $endDate, $selectedCustomer, $selectedProduct), $filename);
+        return $this->queueExcelExport(
+            new OfflineSalesDetailReportExport($sales, $summary, $startDate, $endDate, $selectedCustomer, $selectedProduct),
+            $filename,
+            'Export Laporan Detail Penjualan Offline'
+        );
     }
 }

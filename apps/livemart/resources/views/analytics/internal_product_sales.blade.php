@@ -249,7 +249,7 @@
                             <a href="{{ route('analytics.internal-product-sales') }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-counterclockwise"></i> Reset
                             </a>
-                            <a href="{{ route('analytics.internal-product-sales.export', request()->query()) }}" class="btn btn-success">
+                            <a href="#" data-export="{{ route('analytics.internal-product-sales.export', request()->query()) }}" class="btn btn-success">
                                 <i class="bi bi-download"></i> Export Excel
                             </a>
                         </div>

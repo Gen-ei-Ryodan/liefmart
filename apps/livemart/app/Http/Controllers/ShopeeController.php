@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Imports\ShopeeImport;
 use App\Models\Order;
 use App\Models\Platform;
+use App\Models\ExportJob;
+use App\Jobs\Import\ProcessImportJob;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -587,135 +589,43 @@ class ShopeeController extends Controller
         }
 
         try {
-            // Set main category ke Kosmetik sebelum import
-            session(['main_category_id' => \App\Helpers\MainCategoryHelper::getCosmeticCategoryId()]);
-            session(['main_category_name' => 'Kosmetik']);
-            
-            // Debug logging
-            $mainCategoryId = \App\Helpers\MainCategoryHelper::getSelectedMainCategoryId();
-            \Log::info('ProcessImport - Main Category set to: ' . ($mainCategoryId ?: 'NULL'));
-            
-            // Register our modified sales import handler
-            \App\Models\WarehouseStock::$consolidateOrderItemsByProduct = true;
-            \Log::info('Enabling order item consolidation for tax_id differences');
-            
-            // Proses import data
-            $import = new ShopeeImport($this->platform->id);
+            // Dispatch ke queue
+            $exportJob = ExportJob::create([
+                'type' => 'import',
+                'name' => 'Import Shopee Sales',
+                'user_id' => auth()->id(),
+                'status' => 'pending',
+                'payload' => [
+                    'import_class' => ShopeeImport::class,
+                    'platform_id' => $this->platform->id,
+                    'data_count' => count($data),
+                ],
+                'file_name' => 'shopee_import.xlsx',
+            ]);
 
-            // Set data yang akan diproses
-            $import->setData($data);
-            
-            // Set unmapped products dari session
-            $unmappedProducts = session('unmapped_products', []);
-            $import->setUnmappedProducts($unmappedProducts);
+            ProcessImportJob::dispatch(
+                $exportJob->id,
+                ShopeeImport::class,
+                $this->platform->id,
+                $data,
+                session('unmapped_products', [])
+            );
 
-            // Jalankan proses import
-            $result = $import->processImport();
+            session()->forget(['preview_data', 'unmapped_products', 'insufficient_stock_products']);
 
-            // Reset the flag after import
-            \App\Models\WarehouseStock::$consolidateOrderItemsByProduct = false;
-
-            // Jika sukses, hapus session dan tampilkan pesan sukses
-            if ($result['success'] > 0) {
-                session()->forget(['preview_data', 'unmapped_products']);
-
-                // Tambahkan informasi tambahan tentang nomor pesanan duplikat
-                $successMessage = "Berhasil mengimport {$result['success']} data penjualan Shopee.";
-
-                if (isset($result['duplicates']) && $result['duplicates'] > 0) {
-                    $successMessage .= " {$result['duplicates']} nomor pesanan dilewati karena sudah ada di database.";
-                }
-
-                if (isset($result['skipped']) && $result['skipped'] > 0) {
-                    $successMessage .= " {$result['skipped']} pesanan dilewati karena tidak memiliki data lengkap.";
-                }
-                
-                if (isset($result['unmapped_skipped']) && $result['unmapped_skipped'] > 0) {
-                    $successMessage .= " {$result['unmapped_skipped']} pesanan dilewati karena memiliki produk yang belum dimapping.";
-                }
-
-                return redirect()->route('sales.list')
-                    ->with('success', $successMessage);
-            } else {
-                // Jika ada error, simpan pesan error dalam flash session
-                $errorMessage = 'Gagal mengimport data: '.implode(', ', $result['errors']);
-                session()->flash('error', $errorMessage);
-
-                // Debug: tambahkan log untuk melihat pesan error
-                \Log::info('Error message set in session: '.$errorMessage);
-
-                // Dapatkan info baris yang di-skip dan duplikat
-                $totalRows = $import->getTotalRows();
-                $skippedRows = [
-                    'Tanggal kosong' => $import->getSkippedForMissingDate(),
-                    'Hari kosong' => $import->getSkippedForMissingDay(),
-                    'No Resi kosong' => $import->getSkippedForMissingResi(),
-                ];
-                $skippedRows = array_filter($skippedRows);
-
-                // Cek order yang sudah ada di database
-                $duplicateOrders = [];
-                $orderNumbers = array_unique(array_column($data, 'no_order'));
-                foreach ($orderNumbers as $orderNumber) {
-                    $existingOrder = Order::where('order_number', $orderNumber)->exists();
-                    if ($existingOrder) {
-                        $duplicateOrders[] = $orderNumber;
-                    }
-                }
-
-                return view('sales.shopee.preview-import', [
-                    'data' => $data,
-                    'unmappedProducts' => $unmappedProducts,
-                    'canProceed' => empty($unmappedProducts),
-                    'invalidData' => [],
-                    'totalRows' => $totalRows,
-                    'skippedRows' => $skippedRows,
-                    'duplicateOrders' => $duplicateOrders,
+            if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => true,
+                    'job_id' => $exportJob->id,
+                    'message' => 'Import Shopee sedang diproses di background.',
                 ]);
             }
+
+            return redirect()->route('sales.list')->with('success', 'Import Shopee sedang diproses. Anda akan mendapat notifikasi jika sudah selesai.');
         } catch (\Exception $e) {
-            // Reset the flag in case of error
-            \App\Models\WarehouseStock::$consolidateOrderItemsByProduct = false;
-            
             \Log::error('Exception in processImport: '.$e->getMessage());
-            \Log::error($e->getTraceAsString());
-
-            // Simpan pesan error dalam flash session
-            $errorMessage = 'Terjadi kesalahan saat menyimpan data: '.$e->getMessage();
-            session()->flash('error', $errorMessage);
-
-            // Debug: tambahkan log untuk melihat pesan error
-            \Log::info('Exception message set in session: '.$errorMessage);
-
-            // Dapatkan info baris yang di-skip dan duplikat
-            $import = new ShopeeImport($this->platform->id);
-            $totalRows = $import->getTotalRows();
-            $skippedRows = [
-                'Tanggal kosong' => $import->getSkippedForMissingDate(),
-                'Hari kosong' => $import->getSkippedForMissingDay(),
-                'No Resi kosong' => $import->getSkippedForMissingResi(),
-            ];
-            $skippedRows = array_filter($skippedRows);
-
-            // Cek order yang sudah ada di database
-            $duplicateOrders = [];
-            $orderNumbers = array_unique(array_column($data, 'no_order'));
-            foreach ($orderNumbers as $orderNumber) {
-                $existingOrder = Order::where('order_number', $orderNumber)->exists();
-                if ($existingOrder) {
-                    $duplicateOrders[] = $orderNumber;
-                }
-            }
-
-            return view('sales.shopee.preview-import', [
-                'data' => $data,
-                'unmappedProducts' => $unmappedProducts,
-                'canProceed' => empty($unmappedProducts),
-                'invalidData' => [],
-                'totalRows' => $totalRows,
-                'skippedRows' => $skippedRows,
-                'duplicateOrders' => $duplicateOrders,
-            ]);
+            session()->flash('error', 'Import gagal: '.$e->getMessage());
+            return redirect()->route('sales.shopee.import-excel');
         }
     }
 

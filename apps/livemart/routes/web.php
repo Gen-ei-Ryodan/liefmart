@@ -710,3 +710,11 @@ Route::prefix('financial')->middleware(['auth', 'permission:finance.view'])->gro
     Route::get('unpaid-orders/export/excel', [\App\Http\Controllers\Finance\UnpaidOrdersController::class, 'exportExcel'])->name('finance.unpaid-orders.export.excel');
     Route::get('unpaid-orders/export/pdf', [\App\Http\Controllers\Finance\UnpaidOrdersController::class, 'exportPdf'])->name('finance.unpaid-orders.export.pdf');
 });
+
+// Export Job Routes
+Route::prefix('export-jobs')->middleware(['auth'])->group(function () {
+    Route::get('/', [\App\Http\Controllers\ExportJobController::class, 'index'])->name('export-jobs.index');
+    Route::post('/dispatch', [\App\Http\Controllers\ExportJobController::class, 'dispatchExport'])->name('export-jobs.dispatch');
+    Route::get('/{id}/status', [\App\Http\Controllers\ExportJobController::class, 'status'])->name('export-jobs.status');
+    Route::get('/{id}/download', [\App\Http\Controllers\ExportJobController::class, 'download'])->name('export-jobs.download');
+});

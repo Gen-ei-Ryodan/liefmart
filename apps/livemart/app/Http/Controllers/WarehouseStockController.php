@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Exports\StockExport;
 use App\Exports\StockMutationExport;
 use App\Models\BarangKeluar;
@@ -23,6 +24,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class WarehouseStockController extends Controller
 {
+    use QueueExport;
+
     public function list(Request $request)
     {
         $query = WarehouseStock::with([
@@ -631,7 +634,7 @@ class WarehouseStockController extends Controller
             'stock-rusak-'.date('Y-m-d').'.xlsx' :
             'stock-gudang-'.date('Y-m-d').'.xlsx';
 
-        return Excel::download(new StockExport($groupedStocks, $totalInventoryValue), $filename);
+        return $this->queueExcelExport(new StockExport($groupedStocks, $totalInventoryValue), $filename, 'Export Stock');
     }
 
     /**
@@ -1194,7 +1197,7 @@ class WarehouseStockController extends Controller
         // Generate the Excel file
         $filename = $filenamePrefix.'-'.$dateFormatted.'.xlsx';
 
-        return Excel::download(
+        return $this->queueExcelExport(
             new StockMutationExport(
                 $groupedStocks,
                 $request->start_date,
@@ -1202,7 +1205,8 @@ class WarehouseStockController extends Controller
                 $request->has('include_empty'),
                 $totalInventoryValue
             ),
-            $filename
+            $filename,
+            'Export Mutasi Stok'
         );
     }
 

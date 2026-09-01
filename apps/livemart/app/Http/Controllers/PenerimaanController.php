@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Models\BarangKeluar;
 use App\Models\MainCategory;
 use App\Models\OfflineSaleItem;
@@ -24,6 +25,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PenerimaanController extends Controller
 {
+    use QueueExport;
+
     /**
      * Menampilkan daftar penerimaan barang
      */
@@ -70,8 +73,9 @@ class PenerimaanController extends Controller
      */
     public function export(Request $request)
     {
+        $filters = $request->only(['kode', 'kategori', 'nomor_po', 'status', 'tax_category', 'start_date', 'end_date']);
         $filename = 'penerimaan_' . date('Y-m-d_H-i-s') . '.xlsx';
-        return Excel::download(new PenerimaanExport($request), $filename);
+        return $this->queueExcelExport(new PenerimaanExport($filters), $filename, 'Export Penerimaan');
     }
 
     /**
@@ -79,8 +83,9 @@ class PenerimaanController extends Controller
      */
     public function exportDetail(Request $request)
     {
+        $filters = $request->only(['kode', 'kategori', 'nomor_po', 'status', 'tax_category', 'start_date', 'end_date']);
         $filename = 'penerimaan_detail_' . date('Y-m-d_H-i-s') . '.xlsx';
-        return Excel::download(new PenerimaanDetailExport($request), $filename);
+        return $this->queueExcelExport(new PenerimaanDetailExport($filters), $filename, 'Export Penerimaan Detail');
     }
 
     /**

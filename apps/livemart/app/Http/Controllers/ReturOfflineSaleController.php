@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Models\OfflineSale;
 use App\Models\OfflineSaleItem;
 use App\Models\Product;
@@ -19,6 +20,8 @@ use Carbon\Carbon;
 
 class ReturOfflineSaleController extends Controller
 {
+    use QueueExport;
+
     /**
      * Display a listing of the retur offline sales.
      *
@@ -789,7 +792,7 @@ class ReturOfflineSaleController extends Controller
     {
         $filename = 'retur_offline_detail_' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new \App\Exports\ReturOfflineDetailExport(), $filename);
+        return $this->queueExcelExport(new \App\Exports\ReturOfflineDetailExport(), $filename, 'Export Retur Offline Detail');
     }
 
     /**

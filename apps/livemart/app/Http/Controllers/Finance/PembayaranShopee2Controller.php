@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use App\Models\Shopee2FinancialTransaction;
 use App\Models\Order;
 use App\Models\Platform;
@@ -22,6 +23,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranShopee2Controller extends Controller
 {
+    use QueueExport;
+
     public function index(Request $request)
     {
         // Get platform by name (Shopee Liefmarket)
@@ -1374,7 +1377,7 @@ class PembayaranShopee2Controller extends Controller
 
     public function exportExcel(Request $request)
     {
-        return Excel::download(new Shopee2FinanceAnalyticsExport($request), 'shopee2-finance-analytics.xlsx');
+        return $this->queueExcelExport(new Shopee2FinanceAnalyticsExport($request->all()), 'shopee2-finance-analytics.xlsx', 'Export Shopee2 Finance Analytics');
     }
 
     public function exportPdf(Request $request)
@@ -1395,6 +1398,6 @@ class PembayaranShopee2Controller extends Controller
 
     public function exportCashFlow(Request $request)
     {
-        return Excel::download(new Shopee2CashFlowExport($request), 'shopee2-cash-flow.xlsx');
+        return $this->queueExcelExport(new Shopee2CashFlowExport($request->all()), 'shopee2-cash-flow.xlsx', 'Export Shopee2 Cash Flow');
     }
 }

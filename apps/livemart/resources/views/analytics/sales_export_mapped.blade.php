@@ -182,7 +182,7 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-search"></i> Filter
                                 </button>
-                                <a href="{{ route('analytics.sales-export-mapped.export', request()->all()) }}" class="btn btn-success text-white">
+                                <a href="#" data-export="{{ route('analytics.sales-export-mapped.export', request()->all()) }}" class="btn btn-success text-white">
                                     <i class="bi bi-file-earmark-excel"></i> Export Excel
                                 </a>
                                 <a href="{{ route('analytics.sales-export-mapped') }}" class="btn btn-outline-secondary">

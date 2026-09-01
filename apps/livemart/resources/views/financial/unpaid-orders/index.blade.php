@@ -10,10 +10,10 @@
                     <p class="text-muted mb-0">Kelola dan monitor order yang belum memiliki data pembayaran</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('finance.unpaid-orders.export.excel', request()->query()) }}" class="btn btn-success">
+                    <a href="#" data-export="{{ route('finance.unpaid-orders.export.excel', request()->query()) }}" class="btn btn-success">
                         <i class="fas fa-file-excel me-1"></i> Export Excel
                     </a>
-                    <a href="{{ route('finance.unpaid-orders.export.pdf', request()->query()) }}" class="btn btn-danger">
+                    <a href="#" data-export="{{ route('finance.unpaid-orders.export.pdf', request()->query()) }}" class="btn btn-danger">
                         <i class="fas fa-file-pdf me-1"></i> Export PDF
                     </a>
                 </div>

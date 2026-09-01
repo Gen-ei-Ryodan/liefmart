@@ -12,34 +12,30 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use Illuminate\Http\Request;
 
 class Tiktok2CashFlowExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths
 {
-    protected $request;
+    protected array $filters;
 
-    public function __construct(Request $request = null)
+    public function __construct(array $filters = [])
     {
-        $this->request = $request;
+        $this->filters = $filters;
     }
 
     public function collection()
     {
         $query = ArusKasTiktok2Import::with('platform');
 
-        if ($this->request) {
-            // Apply filters from request
-            if ($this->request->filled('from_date')) {
-                $query->whereDate('tanggal_pembayaran', '>=', $this->request->from_date);
-            }
-            
-            if ($this->request->filled('to_date')) {
-                $query->whereDate('tanggal_pembayaran', '<=', $this->request->to_date);
-            }
-            
-            if ($this->request->filled('order_number')) {
-                $query->where('no_pesanan', 'like', '%' . $this->request->order_number . '%');
-            }
+        if (!empty($this->filters['from_date'])) {
+            $query->whereDate('tanggal_pembayaran', '>=', $this->filters['from_date']);
+        }
+        
+        if (!empty($this->filters['to_date'])) {
+            $query->whereDate('tanggal_pembayaran', '<=', $this->filters['to_date']);
+        }
+        
+        if (!empty($this->filters['order_number'])) {
+            $query->where('no_pesanan', 'like', '%' . $this->filters['order_number'] . '%');
         }
 
         return $query->orderBy('tanggal_pembayaran', 'desc')

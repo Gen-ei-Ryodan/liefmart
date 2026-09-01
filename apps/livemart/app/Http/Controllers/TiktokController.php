@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Imports\TiktokImport;
 use App\Models\Order;
 use App\Models\Platform;
+use App\Models\ExportJob;
+use App\Jobs\Import\ProcessImportJob;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -687,134 +689,54 @@ public function importExcel()
         }
 
         try {
-            // Proses import data
-            $import = new TiktokImport($this->platform->id);
+            // Simpan data ke ExportJob untuk queue processing
+            $exportJob = ExportJob::create([
+                'type' => 'import',
+                'name' => 'Import TikTok Sales',
+                'user_id' => auth()->id(),
+                'status' => 'pending',
+                'payload' => [
+                    'import_class' => TiktokImport::class,
+                    'platform_id' => $this->platform->id,
+                    'data_count' => count($data),
+                ],
+                'file_name' => 'tiktok_import.xlsx',
+            ]);
 
-            // Set data yang akan diproses
-            $import->setData($data);
-            
-            // Set unmapped products dari session
-            $unmappedProducts = session('unmapped_products', []);
-            $import->setUnmappedProducts($unmappedProducts);
+            // Dispatch ke queue
+            ProcessImportJob::dispatch(
+                $exportJob->id,
+                TiktokImport::class,
+                $this->platform->id,
+                $data,
+                session('unmapped_products', [])
+            );
 
-            // Jalankan proses import
-            $result = $import->processImport();
+            // Hapus session
+            session()->forget(['preview_data', 'unmapped_products', 'insufficient_stock_products']);
 
-            // Jika sukses, hapus session dan tampilkan pesan sukses
-            if ($result['success'] > 0) {
-                session()->forget(['preview_data', 'unmapped_products', 'insufficient_stock_products']);
-
-                // Tambahkan informasi tambahan tentang nomor pesanan duplikat
-                $successMessage = "Berhasil mengimport {$result['success']} data penjualan Tiktok.";
-
-                if (isset($result['duplicates']) && $result['duplicates'] > 0) {
-                    $successMessage .= " {$result['duplicates']} nomor pesanan dilewati karena sudah ada di database.";
-                }
-
-                if (isset($result['skipped']) && $result['skipped'] > 0) {
-                    $successMessage .= " {$result['skipped']} pesanan dilewati karena tidak memiliki data lengkap.";
-                }
-
-                // Tambahkan informasi tentang order yang gagal jika ada
-                if (isset($result['failed_orders']) && !empty($result['failed_orders'])) {
-                    $failedCount = count($result['failed_orders']);
-                    $successMessage .= " {$failedCount} pesanan gagal diproses.";
-                    
-                    // Simpan detail order yang gagal untuk ditampilkan sebagai warning
-                    $failedOrderDetails = [];
-                    foreach ($result['failed_orders'] as $failedOrder) {
-                        $failedOrderDetails[] = "Order {$failedOrder['order_number']}: {$failedOrder['error']}";
-                    }
-                    session()->flash('warning', 'Beberapa pesanan gagal diproses: ' . implode('; ', $failedOrderDetails));
-                }
-
-                return redirect()->route('sales.list')->with('success', $successMessage);
-            } else {
-                // Jika ada error, simpan pesan error dalam flash session
-                $errorMessage = 'Gagal mengimport data: ' . implode(', ', $result['errors']);
-                session()->flash('error', $errorMessage);
-
-                // Debug: tambahkan log untuk melihat pesan error
-                \Log::info('Error message set in session: ' . $errorMessage);
-
-                // Dapatkan info baris yang di-skip dan duplikat
-                $totalRows = $import->getTotalRows();
-                $skippedRows = [
-                    'Tanggal kosong' => $import->getSkippedForMissingDate(),
-                    'Hari kosong' => $import->getSkippedForMissingDay(),
-                    'No Resi kosong' => $import->getSkippedForMissingResi(),
-                ];
-                $skippedRows = array_filter($skippedRows);
-
-                // Cek order yang sudah ada di database
-                $duplicateOrders = [];
-                $orderNumbers = array_unique(array_column($data, 'no_order'));
-                foreach ($orderNumbers as $orderNumber) {
-                    $existingOrder = Order::where('order_number', $orderNumber)->exists();
-                    if ($existingOrder) {
-                        $duplicateOrders[] = $orderNumber;
-                    }
-                }
-
-                return view('sales.tiktok.preview-import', [
-                    'data' => $data,
-                    'unmappedProducts' => $unmappedProducts,
-                    'canProceed' => false,
-                    'invalidData' => [],
-                    'totalRows' => $totalRows,
-                    'skippedRows' => $skippedRows,
-                    'duplicateOrders' => $duplicateOrders,
-                    'insufficientStockProducts' => $insufficientStockProducts
+            // Return JSON untuk AJAX handler
+            if ($request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json([
+                    'success' => true,
+                    'job_id' => $exportJob->id,
+                    'message' => 'Import TikTok sedang diproses di background.',
                 ]);
             }
+
+            return redirect()->route('sales.list')->with('success', 'Import TikTok sedang diproses. Anda akan mendapat notifikasi jika sudah selesai.');
         } catch (\Exception $e) {
             \Log::error('Exception in processImport: ' . $e->getMessage());
-            \Log::error($e->getTraceAsString());
 
-            // Simpan pesan error dalam flash session dengan detail yang lebih jelas
             $errorMessage = 'Import gagal: ' . $e->getMessage();
             
-            // Jika error terkait stok, berikan pesan yang lebih spesifik
             if (strpos($e->getMessage(), 'Stok tidak cukup') !== false) {
-                $errorMessage = 'Import gagal karena stok tidak mencukupi untuk beberapa produk. Silakan periksa stok warehouse dan coba lagi.';
+                $errorMessage = 'Import gagal karena stok tidak mencukupi untuk beberapa produk.';
             }
             
             session()->flash('error', $errorMessage);
 
-            // Debug: tambahkan log untuk melihat pesan error
-            \Log::info('Exception message set in session: ' . $errorMessage);
-
-            // Dapatkan info baris yang di-skip dan duplikat
-            $import = new TiktokImport($this->platform->id);
-            $totalRows = $import->getTotalRows();
-            $skippedRows = [
-                'Tanggal kosong' => $import->getSkippedForMissingDate(),
-                'Hari kosong' => $import->getSkippedForMissingDay(),
-                'No Resi kosong' => $import->getSkippedForMissingResi(),
-            ];
-            $skippedRows = array_filter($skippedRows);
-
-            // Cek order yang sudah ada di database
-            $duplicateOrders = [];
-            $orderNumbers = array_unique(array_column($data, 'no_order'));
-            foreach ($orderNumbers as $orderNumber) {
-                $existingOrder = Order::where('order_number', $orderNumber)->exists();
-                if ($existingOrder) {
-                    $duplicateOrders[] = $orderNumber;
-                }
-            }
-
-            return view('sales.tiktok.preview-import', [
-                'data' => $data,
-                'unmappedProducts' => $unmappedProducts,
-                'canProceed' => false,
-                'invalidData' => [],
-                'totalRows' => $totalRows,
-                'skippedRows' => $skippedRows,
-                'duplicateOrders' => $duplicateOrders,
-                'insufficientStockProducts' => $insufficientStockProducts,
-                'totalStockRequired' => session('total_stock_required', 0)
-            ]);
+            return redirect()->route('sales.tiktok.import-excel');
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Models\Penerimaan;
 use App\Models\PenerimaanDetail;
 use App\Models\Product;
@@ -15,9 +16,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ReturPembelianExport;
 
 class ReturPembelianController extends Controller
 {
+    use QueueExport;
+
     /**
      * Display a listing of the retur pembelian.
      *
@@ -925,57 +929,7 @@ class ReturPembelianController extends Controller
             }
         }
 
-        return Excel::download(new class($exportData) implements \Maatwebsite\Excel\Concerns\FromArray, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithColumnFormatting, \Maatwebsite\Excel\Concerns\WithCustomValueBinder {
-            private $data;
-
-            public function __construct($data)
-            {
-                $this->data = $data;
-            }
-
-            public function array(): array
-            {
-                return $this->data;
-            }
-
-            public function headings(): array
-            {
-                return [
-                    'Kode Retur',
-                    'Nomor PO',
-                    'Tanggal Penerimaan',
-                    'Tanggal Retur',
-                    'Tipe Retur',
-                    'Nama Produk',
-                    'Harga',
-                    'Qty Retur',
-                    'Satuan',
-                    'Total Nominal',
-                    'Alasan',
-                    'User',
-                    'Dibuat Pada'
-                ];
-            }
-
-            public function columnFormats(): array
-            {
-                return [
-                    'G' => '#,##0.00', // Harga
-                    'H' => '#,##0.00', // Qty Retur
-                    'J' => '#,##0.00', // Total Nominal
-                ];
-            }
-
-            public function bindValue(\PhpOffice\PhpSpreadsheet\Cell\Cell $cell, $value)
-            {
-                if (is_numeric($value)) {
-                    $cell->setValueExplicit($value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-                    return true;
-                }
-                $cell->setValue($value);
-                return true;
-            }
-        }, 'retur_pembelian_' . date('Y-m-d_H-i-s') . '.xlsx');
+        return $this->queueExcelExport(new ReturPembelianExport($exportData), 'retur_pembelian_' . date('Y-m-d_H-i-s') . '.xlsx', 'Export Retur Pembelian');
     }
 
     /**

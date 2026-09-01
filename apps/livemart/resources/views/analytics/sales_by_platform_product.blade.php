@@ -318,7 +318,7 @@
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="{{ route('analytics.sales-by-platform-product.export', request()->all()) }}" class="btn btn-success w-100">
+                                <a href="#" data-export="{{ route('analytics.sales-by-platform-product.export', request()->all()) }}" class="btn btn-success w-100">
                                     <i class="bi bi-file-earmark-excel"></i> Export Excel
                                 </a>
                             </div>

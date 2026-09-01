@@ -278,7 +278,7 @@
                                 </a>
                             </div>
                             <div class="mt-2">
-                                <a href="{{ route('analytics.sales-detail-report.export', request()->query()) }}" class="btn btn-success">
+                                <a href="#" data-export="{{ route('analytics.sales-detail-report.export', request()->query()) }}" class="btn btn-success">
                                     <i class="bi bi-download"></i> Export Excel
                                 </a>
                             </div>

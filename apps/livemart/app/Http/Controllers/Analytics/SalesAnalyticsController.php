@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Platform;
 use App\Models\ReturPenjualan;
+use App\Traits\QueueExport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ use App\Queries\Analytics\Sales\SalesDetailQuery;
 
 class SalesAnalyticsController extends Controller
 {
+    use QueueExport;
     public function salesByPlatformReport(Request $request)
     {
         $platforms = Platform::whereIn('name', ['Shopee Lamourad', 'Shopee Liefmarket', 'Tiktok Lamourad', 'Tiktok Liefmarket', 'Offline'])->get();
@@ -604,7 +606,11 @@ class SalesAnalyticsController extends Controller
         
         $filename = 'analytics-penjualan-master-internal-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new InternalProductSalesExport($products, $summary, $startDate, $endDate), $filename);
+        return $this->queueExcelExport(
+            new InternalProductSalesExport($products, $summary, $startDate, $endDate),
+            $filename,
+            'Export Penjualan Master Internal'
+        );
     }
 
     public function salesExportMapped(Request $request)
@@ -759,7 +765,11 @@ class SalesAnalyticsController extends Controller
         ];
         
         $filename = 'sales-detail-mapped-' . date('Y-m-d') . '.xlsx';
-        return Excel::download(new SalesExportMappedExport($filters), $filename);
+        return $this->queueExcelExport(
+            new SalesExportMappedExport($filters),
+            $filename,
+            'Export Sales Detail Mapped'
+        );
     }
 
     public function salesDetailReport(Request $request)
@@ -2750,7 +2760,11 @@ class SalesAnalyticsController extends Controller
         
         $filename = 'analisis-saldo-masuk-bulanan-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new MonthlySalesSummaryExport($monthlySummary, $summary, $startDate, $endDate, $platformName), $filename);
+        return $this->queueExcelExport(
+            new MonthlySalesSummaryExport($monthlySummary, $summary, $startDate, $endDate, $platformName),
+            $filename,
+            'Export Analisis Saldo Masuk Bulanan'
+        );
     }
 
     /**
@@ -2851,7 +2865,11 @@ class SalesAnalyticsController extends Controller
         
         $filename = 'analisis-saldo-masuk-per-hari-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new SalesByDayOfWeekExport($dayOfWeekSummary, $summary, $startDate, $endDate, $platformName), $filename);
+        return $this->queueExcelExport(
+            new SalesByDayOfWeekExport($dayOfWeekSummary, $summary, $startDate, $endDate, $platformName),
+            $filename,
+            'Export Analisis Saldo Masuk Per Hari'
+        );
     }
 
     /**
@@ -2978,7 +2996,11 @@ class SalesAnalyticsController extends Controller
          
         $filename = 'analisis-saldo-masuk-per-tanggal-' . date('Y-m-d') . '.xlsx';
          
-        return Excel::download(new SalesByDateNumberExport($dateNumberSummary, $summary, $startDate, $endDate, $platformName), $filename);
+        return $this->queueExcelExport(
+            new SalesByDateNumberExport($dateNumberSummary, $summary, $startDate, $endDate, $platformName),
+            $filename,
+            'Export Analisis Saldo Masuk Per Tanggal'
+        );
     }
 
     /**
@@ -3074,9 +3096,11 @@ class SalesAnalyticsController extends Controller
         $filename = 'laporan-detail-penjualan-' . date('Y-m-d') . '.xlsx';
         
         // Pass query instead of collection to use chunking
-        return Excel::download(
-            new SalesDetailReportExport($query, $summary, $startDate, $endDate, $request->platform_id), 
-            $filename
+        return $this->queueExcelExport(
+            new SalesDetailReportExport($query, $summary, $startDate, $endDate, $request->platform_id),
+            $filename,
+            'Export Laporan Detail Penjualan',
+            true
         );
     }
 
@@ -3192,7 +3216,11 @@ class SalesAnalyticsController extends Controller
         
         $filename = 'daftar-pesanan-platform-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new SalesByPlatformExport($validOrders->values(), $summary, $startDate, $endDate, $request->platform_id), $filename);
+        return $this->queueExcelExport(
+            new SalesByPlatformExport($validOrders->values(), $summary, $startDate, $endDate, $request->platform_id),
+            $filename,
+            'Export Daftar Pesanan Platform'
+        );
     }
 
     /**
@@ -3316,7 +3344,11 @@ class SalesAnalyticsController extends Controller
 
         $platformName = $selectedPlatform ? ($platforms->where('id', $selectedPlatform)->first()->name ?? 'Unknown') : null;
         $filename = 'laporan-penjualan-status-hari-' . date('Y-m-d') . '.xlsx';
-        return Excel::download(new SalesByStatusDayExport($rows, $summary, $startDate, $endDate, $platformName, $selectedStatus, $request), $filename);
+        return $this->queueExcelExport(
+            new SalesByStatusDayExport($rows, $summary, $startDate, $endDate, $platformName, $selectedStatus, $request),
+            $filename,
+            'Export Laporan Penjualan Status Hari'
+        );
     }
 
 }

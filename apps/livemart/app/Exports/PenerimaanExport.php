@@ -10,44 +10,42 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Illuminate\Http\Request;
 
 class PenerimaanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
-    protected $request;
+    protected $filters;
     protected $counter = 1;
 
-    public function __construct(Request $request)
+    public function __construct(array $filters = [])
     {
-        $this->request = $request;
+        $this->filters = $filters;
     }
 
     public function query()
     {
-        // Build the same query as in the controller index method
         return Penerimaan::with(['mainCategory', 'taxCategory', 'details.product', 'details.satuan'])
-            ->when($this->request->filled('kode'), function ($q) {
-                return $q->where('kode_penerimaan', 'like', '%' . $this->request->kode . '%');
+            ->when($this->filters['kode'] ?? null, function ($q, $val) {
+                return $q->where('kode_penerimaan', 'like', '%' . $val . '%');
             })
-            ->when($this->request->filled('kategori'), function ($q) {
-                return $q->where('main_category_id', $this->request->kategori);
+            ->when($this->filters['kategori'] ?? null, function ($q, $val) {
+                return $q->where('main_category_id', $val);
             })
-            ->when($this->request->filled('nomor_po'), function ($q) {
-                return $q->where('nomor_po', 'like', '%' . $this->request->nomor_po . '%');
+            ->when($this->filters['nomor_po'] ?? null, function ($q, $val) {
+                return $q->where('nomor_po', 'like', '%' . $val . '%');
             })
-            ->when($this->request->filled('status'), function ($q) {
-                return $q->where('status', $this->request->status);
+            ->when($this->filters['status'] ?? null, function ($q, $val) {
+                return $q->where('status', $val);
             })
-            ->when($this->request->filled('tax_category'), function ($q) {
-                return $q->whereHas('taxCategory', function ($subQ) {
-                    $subQ->where('name', $this->request->tax_category);
+            ->when($this->filters['tax_category'] ?? null, function ($q, $val) {
+                return $q->whereHas('taxCategory', function ($subQ) use ($val) {
+                    $subQ->where('name', $val);
                 });
             })
-            ->when($this->request->filled('start_date'), function ($q) {
-                return $q->whereDate('tanggal_penerimaan', '>=', $this->request->start_date);
+            ->when($this->filters['start_date'] ?? null, function ($q, $val) {
+                return $q->whereDate('tanggal_penerimaan', '>=', $val);
             })
-            ->when($this->request->filled('end_date'), function ($q) {
-                return $q->whereDate('tanggal_penerimaan', '<=', $this->request->end_date);
+            ->when($this->filters['end_date'] ?? null, function ($q, $val) {
+                return $q->whereDate('tanggal_penerimaan', '<=', $val);
             })
             ->orderBy('tanggal_penerimaan', 'asc');
     }

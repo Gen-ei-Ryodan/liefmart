@@ -32,14 +32,14 @@
                             <a href="{{ route('warehouse.stock.list') }}" class="btn btn-sm btn-primary me-2">
                                 <i class="fas fa-boxes me-1"></i> Lihat Stok Normal
                             </a>
-                            <a href="{{ route('warehouse.stock.export', array_merge(request()->except(['page', 'per_page']), ['is_damaged' => true])) }}" class="btn btn-sm btn-danger">
+                            <a href="#" data-export="{{ route('warehouse.stock.export', array_merge(request()->except(['page', 'per_page']), ['is_damaged' => true])) }}" class="btn btn-sm btn-danger">
                                 <i class="fas fa-file-excel me-1"></i> Export Excel
                             </a>
                         @else
                             <a href="{{ route('warehouse.stock.damaged') }}" class="btn btn-sm btn-danger me-2">
                                 <i class="fas fa-exclamation-triangle me-1"></i> Lihat Barang Rusak
                             </a>
-                            <a href="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-sm btn-success">
+                            <a href="#" data-export="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-sm btn-success">
                                 <i class="fas fa-file-excel me-1"></i> Export Excel
                             </a>
                         @endif

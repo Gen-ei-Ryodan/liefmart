@@ -42,7 +42,7 @@
                     <button id="exportSelectedBtn" class="btn btn-info shadow-sm me-2" disabled>
                         <i class="fas fa-file-excel me-1"></i> Export Terpilih
                     </button>
-                    <a href="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-success shadow-sm">
+                    <a href="#" data-export="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-success shadow-sm">
                         <i class="fas fa-file-excel me-1"></i> Export Semua
                     </a>
                 </div>

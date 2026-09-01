@@ -166,7 +166,7 @@
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Analisis Saldo Masuk per Tanggal (1-31)</h5>
-                <a href="{{ route('analytics.sales-by-date-number.export', request()->all()) }}" class="btn btn-light btn-sm">
+                <a href="#" data-export="{{ route('analytics.sales-by-date-number.export', request()->all()) }}" class="btn btn-light btn-sm">
                     <i class="bi bi-download me-1"></i> Export Excel
                 </a>
             </div>

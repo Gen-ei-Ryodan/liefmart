@@ -18,15 +18,14 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
-use Illuminate\Http\Request;
 
 class Tiktok2FinanceAnalyticsExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithColumnFormatting, WithCustomValueBinder
 {
-    protected $request;
+    protected array $filters;
 
-    public function __construct(?Request $request = null)
+    public function __construct(array $filters = [])
     {
-        $this->request = $request;
+        $this->filters = $filters;
     }
 
     public function collection()
@@ -37,31 +36,28 @@ class Tiktok2FinanceAnalyticsExport extends DefaultValueBinder implements FromCo
             'order.mainCategory'
         ]);
 
-        if ($this->request) {
-            // Apply filters from request
-            if ($this->request->filled('from_date')) {
-                $query->whereDate('tanggal_masuk_pembayaran', '>=', $this->request->from_date);
-            }
-            
-            if ($this->request->filled('to_date')) {
-                $query->whereDate('tanggal_masuk_pembayaran', '<=', $this->request->to_date);
-            }
-            
-            if ($this->request->filled('from_order_date')) {
-                $query->whereDate('tanggal_order', '>=', $this->request->from_order_date);
-            }
-            
-            if ($this->request->filled('to_order_date')) {
-                $query->whereDate('tanggal_order', '<=', $this->request->to_order_date);
-            }
-            
-            if ($this->request->filled('order_number')) {
-                $query->where('no_order', 'like', '%' . $this->request->order_number . '%');
-            }
-            
-            if ($this->request->filled('invoice_number')) {
-                $query->where('no_invoice', 'like', '%' . $this->request->invoice_number . '%');
-            }
+        if (!empty($this->filters['from_date'])) {
+            $query->whereDate('tanggal_masuk_pembayaran', '>=', $this->filters['from_date']);
+        }
+        
+        if (!empty($this->filters['to_date'])) {
+            $query->whereDate('tanggal_masuk_pembayaran', '<=', $this->filters['to_date']);
+        }
+        
+        if (!empty($this->filters['from_order_date'])) {
+            $query->whereDate('tanggal_order', '>=', $this->filters['from_order_date']);
+        }
+        
+        if (!empty($this->filters['to_order_date'])) {
+            $query->whereDate('tanggal_order', '<=', $this->filters['to_order_date']);
+        }
+        
+        if (!empty($this->filters['order_number'])) {
+            $query->where('no_order', 'like', '%' . $this->filters['order_number'] . '%');
+        }
+        
+        if (!empty($this->filters['invoice_number'])) {
+            $query->where('no_invoice', 'like', '%' . $this->filters['invoice_number'] . '%');
         }
 
         // Exclude only fully returned orders (retur full), keep partial returns (retur sebagian)

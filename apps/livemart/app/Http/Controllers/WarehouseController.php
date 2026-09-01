@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Models\Lokasi;
 use App\Models\Penerimaan;
 use App\Models\PenerimaanDetail;
@@ -21,6 +22,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class WarehouseController extends Controller
 {
+    use QueueExport;
+
     public function index(Request $request)
     {
         // Query dasar untuk mendapatkan penerimaan detail dengan status Unlocated
@@ -603,11 +606,11 @@ class WarehouseController extends Controller
         $filename = 'stok_barang_'.date('Y-m-d').'.xlsx';
         
         // Generate Excel file using the existing StockExport class
-        return Excel::download(new \App\Exports\StockExport($stocks), $filename);
+        return $this->queueExcelExport(new \App\Exports\StockExport($stocks), $filename, 'Export Stok Barang');
     }
 
     public function export(Request $request)
     {
-        return Excel::download(new WarehouseExport($request), 'unlocated_items_'.date('Y-m-d').'.xlsx');
+        return $this->queueExcelExport(new WarehouseExport($request), 'unlocated_items_'.date('Y-m-d').'.xlsx', 'Export Warehouse Unlocated Items');
     }
 }

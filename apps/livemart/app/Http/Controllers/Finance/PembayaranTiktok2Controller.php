@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Traits\QueueExport;
 use App\Models\Tiktok2FinancialTransaction;
 use App\Models\Order;
 use App\Models\Platform;
@@ -22,6 +23,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranTiktok2Controller extends Controller
 {
+    use QueueExport;
+
     public function index(Request $request)
     {
         // Get platform by name (Tiktok Liefmarket)
@@ -1560,7 +1563,7 @@ class PembayaranTiktok2Controller extends Controller
 
     public function exportExcel(Request $request)
     {
-        return Excel::download(new Tiktok2FinanceAnalyticsExport($request), 'tiktok2-finance-analytics.xlsx');
+        return $this->queueExcelExport(new Tiktok2FinanceAnalyticsExport($request->all()), 'tiktok2-finance-analytics.xlsx', 'Export Tiktok2 Finance Analytics');
     }
 
     public function exportPdf(Request $request)
@@ -1581,7 +1584,7 @@ class PembayaranTiktok2Controller extends Controller
 
     public function exportCashFlow(Request $request)
     {
-        return Excel::download(new Tiktok2CashFlowExport($request), 'tiktok2-cash-flow.xlsx');
+        return $this->queueExcelExport(new Tiktok2CashFlowExport($request->all()), 'tiktok2-cash-flow.xlsx', 'Export Tiktok2 Cash Flow');
     }
 
     /**

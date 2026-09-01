@@ -12,7 +12,7 @@
                         <i class="fas fa-undo-alt me-2"></i>Daftar Retur Pembelian
                     </h5>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('retur-pembelian.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
+                        <a href="#" data-export="{{ route('retur-pembelian.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                         <a href="{{ route('retur-pembelian.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">

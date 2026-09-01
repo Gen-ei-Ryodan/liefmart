@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Master;
 
 use App\Exports\ProductsExport;
+use App\Traits\QueueExport;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\MainCategory;
@@ -15,11 +16,11 @@ use App\Models\SubBrand;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Excel as ExcelFormat;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
+    use QueueExport;
+
     /**
      * Display a listing of the resource.
      *
@@ -46,18 +47,18 @@ class ProductController extends Controller
         $timestamp = now()->format('Y-m-d_H-i-s');
 
         if ($format === 'xlsx') {
-            return Excel::download(
+            return $this->queueExcelExport(
                 new ProductsExport($query),
                 "master_products_{$timestamp}.xlsx",
-                ExcelFormat::XLSX
+                'Export Master Products XLSX'
             );
         }
 
         if ($format === 'csv') {
-            return Excel::download(
+            return $this->queueExcelExport(
                 new ProductsExport($query),
                 "master_products_{$timestamp}.csv",
-                ExcelFormat::CSV
+                'Export Master Products CSV'
             );
         }
 

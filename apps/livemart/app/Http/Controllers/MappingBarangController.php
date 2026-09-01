@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Traits\QueueExport;
 use App\Exports\MappingBarangExport;
 use App\Models\User;
 use App\Models\MappingBarang;
@@ -16,6 +17,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class MappingBarangController extends Controller
 {
+    use QueueExport;
+
     /**
      * Tampilkan daftar mapping produk
      */
@@ -134,7 +137,7 @@ class MappingBarangController extends Controller
     {
         $filename = 'mapping-produk-' . now()->format('Y-m-d_His') . '.xlsx';
 
-        return Excel::download(new MappingBarangExport($request), $filename);
+        return $this->queueExcelExport(new MappingBarangExport($request->all()), $filename, 'Export Mapping Barang');
     }
 
     /**

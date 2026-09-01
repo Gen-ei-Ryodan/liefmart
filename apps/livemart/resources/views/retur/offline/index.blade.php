@@ -15,7 +15,7 @@
                         <a href="{{ route('retur-offline.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
                             <i class="fas fa-plus me-1"></i> Buat Retur Baru
                         </a>
-                        <a href="{{ route('retur-offline.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
+                        <a href="#" data-export="{{ route('retur-offline.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                     </div>

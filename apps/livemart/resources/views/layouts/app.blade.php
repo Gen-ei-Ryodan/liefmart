@@ -867,6 +867,180 @@
             }, 1000);
         });
     </script>
+
+    <!-- Export Job Handler -->
+    <script>
+    function showToast(html, borderColor) {
+        var container = document.getElementById('export-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'export-toast-container';
+            container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;';
+            document.body.appendChild(container);
+        }
+        var toast = document.createElement('div');
+        toast.style.cssText = 'background:#fff;border-left:4px solid ' + (borderColor || '#6366F1') + ';padding:16px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);min-width:300px;max-width:420px;font-family:Poppins,sans-serif;font-size:14px;display:flex;align-items:center;gap:12px;';
+        toast.innerHTML = html;
+        container.appendChild(toast);
+        return toast;
+    }
+
+    function showLoading() {
+        return showToast('<div style="width:20px;min-width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div><strong>Export sedang diproses...</strong><br><span style="color:#6B7280;font-size:12px;">Mohon tunggu sebentar</span></div>');
+    }
+
+    function showSuccess(toast, downloadUrl) {
+        toast.style.borderLeftColor = '#10B981';
+        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Export selesai!</strong><br><a href="' + downloadUrl + '" style="color:#6366F1;font-weight:600;text-decoration:underline;">Download File</a></div>';
+        setTimeout(function(){ toast.remove(); }, 60000);
+    }
+
+    function showError(toast, msg) {
+        toast.style.borderLeftColor = '#EF4444';
+        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#EF4444;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><div><strong style="color:#EF4444;">Export gagal</strong><br><span style="color:#6B7280;font-size:12px;">' + (msg || 'Terjadi kesalahan') + '</span></div>';
+        setTimeout(function(){ toast.remove(); }, 8000);
+    }
+
+    function triggerDownload(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'export.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!document.getElementById('export-toast-container')) {
+            var container = document.createElement('div');
+            container.id = 'export-toast-container';
+            container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;';
+            document.body.appendChild(container);
+        }
+
+        if (!document.getElementById('export-spin-style')) {
+            var style = document.createElement('style');
+            style.id = 'export-spin-style';
+            style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+            document.head.appendChild(style);
+        }
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('[data-export]');
+            if (!btn) return;
+            e.preventDefault();
+
+            const url = btn.getAttribute('data-export') || btn.href;
+            if (!url) return;
+
+            const toast = showLoading();
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type') || '';
+
+                // Jika response adalah JSON (queue export)
+                if (contentType.includes('application/json')) {
+                    return response.json().then(data => {
+                        if (!data.job_id) {
+                            showError(toast, data.message || 'Terjadi kesalahan');
+                            return;
+                        }
+                        // Poll status
+                        const poll = setInterval(() => {
+                            fetch('/export-jobs/' + data.job_id + '/status', {
+                                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                            })
+                            .then(r => r.json())
+                            .then(s => {
+                                if (s.status === 'completed') {
+                                    clearInterval(poll);
+                                    showSuccess(toast, '/export-jobs/' + data.job_id + '/download');
+                                } else if (s.status === 'failed') {
+                                    clearInterval(poll);
+                                    showError(toast, s.error || 'Terjadi kesalahan');
+                                }
+                            })
+                            .catch(() => {});
+                        }, 2000);
+                    });
+                }
+
+                // Jika response adalah file (sync export) — trigger download langsung
+                if (response.ok) {
+                    const disposition = response.headers.get('content-disposition') || '';
+                    let filename = 'export.xlsx';
+                    const match = disposition.match(/filename="?([^";\n]+)"?/);
+                    if (match) filename = match[1];
+
+                    return response.blob().then(blob => {
+                        triggerDownload(blob, filename);
+                        toast.style.borderLeftColor = '#10B981';
+                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Download berhasil!</strong></div>';
+                        setTimeout(() => toast.remove(), 3000);
+                    });
+                }
+
+                throw new Error('Export failed');
+            })
+            .catch(err => {
+                showError(toast, err.message || 'Terjadi kesalahan');
+            });
+        });
+    });
+    </script>
+
+    <!-- Import Form Handler -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form[action*="process-import"]').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var frm = this;
+
+                var toast = showToast('<div style="width:20px;min-width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div><strong>Import sedang diproses...</strong><br><span style="color:#6B7280;font-size:12px;">Mohon tunggu sebentar, data sedang diproses di background.</span></div>');
+
+                var formData = new FormData(frm);
+                fetch(frm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    var ct = response.headers.get('content-type') || '';
+                    if (ct.indexOf('application/json') !== -1) {
+                        return response.json();
+                    }
+                    throw new Error('Unexpected response');
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        toast.style.borderLeftColor = '#10B981';
+                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Import diproses!</strong><br><span style="color:#6B7280;font-size:12px;">' + (data.message || 'Anda akan dialihkan...') + '</span></div>';
+                        setTimeout(function() { toast.remove(); window.location.href = data.redirect || '/sales/list'; }, 3000);
+                    } else {
+                        showError(toast, data.message || 'Import gagal');
+                    }
+                })
+                .catch(function(err) {
+                    showError(toast, err.message || 'Terjadi kesalahan');
+                });
+            });
+        });
+    });
+    </script>
     
     <!-- Date Format Handler -->
     <script src="{{ asset('js/date-format.js') }}"></script>

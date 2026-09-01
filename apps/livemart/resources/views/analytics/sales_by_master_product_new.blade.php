@@ -216,7 +216,7 @@
                                 </a>
                             </div>
                             <div class="col-md-6">
-                                <a href="{{ route('analytics.sales-by-master-product.export', request()->all()) }}" class="btn btn-success w-100">
+                                <a href="#" data-export="{{ route('analytics.sales-by-master-product.export', request()->all()) }}" class="btn btn-success w-100">
                                     <i class="bi bi-file-earmark-excel"></i> Export Excel
                                 </a>
                             </div>

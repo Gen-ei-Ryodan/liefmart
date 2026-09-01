@@ -11,12 +11,14 @@ use App\Exports\ShopeeFinanceAnalyticsExport;
 use App\Exports\TiktokFinanceAnalyticsExport;
 use App\Exports\Shopee2FinanceAnalyticsExport;
 use App\Exports\Tiktok2FinanceAnalyticsExport;
+use App\Traits\QueueExport;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
 class FinanceAnalyticsController extends Controller
 {
+    use QueueExport;
     /**
      * Display Shopee analytics
      *
@@ -467,7 +469,12 @@ class FinanceAnalyticsController extends Controller
     {
         $filename = 'shopee_finance_analytics_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new ShopeeFinanceAnalyticsExport($request->all()), $filename);
+        return $this->queueExcelExport(
+            new ShopeeFinanceAnalyticsExport($request->all()),
+            $filename,
+            'Export Shopee Finance Analytics',
+            true
+        );
     }
 
     /**
@@ -480,7 +487,12 @@ class FinanceAnalyticsController extends Controller
     {
         $filename = 'shopee2_finance_analytics_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new Shopee2FinanceAnalyticsExport($request->all()), $filename);
+        return $this->queueExcelExport(
+            new Shopee2FinanceAnalyticsExport($request->all()),
+            $filename,
+            'Export Shopee2 Finance Analytics',
+            true
+        );
     }
 
     /**
@@ -493,7 +505,12 @@ class FinanceAnalyticsController extends Controller
     {
         $filename = 'tiktok_finance_analytics_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new TiktokFinanceAnalyticsExport($request->all()), $filename);
+        return $this->queueExcelExport(
+            new TiktokFinanceAnalyticsExport($request->all()),
+            $filename,
+            'Export TikTok Finance Analytics',
+            true
+        );
     }
 
     /**
@@ -506,6 +523,11 @@ class FinanceAnalyticsController extends Controller
     {
         $filename = 'tiktok2_finance_analytics_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
         
-        return Excel::download(new Tiktok2FinanceAnalyticsExport($request->all()), $filename);
+        return $this->queueExcelExport(
+            new Tiktok2FinanceAnalyticsExport($request->all()),
+            $filename,
+            'Export TikTok2 Finance Analytics',
+            true
+        );
     }
 } 

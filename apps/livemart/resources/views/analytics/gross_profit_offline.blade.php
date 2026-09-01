@@ -293,7 +293,6 @@
 <script>
     // Export function that preserves current filters
     function exportData() {
-        // Get current filter values
         const startDate = document.getElementById('start_date').value;
         const endDate = document.getElementById('end_date').value;
         const invoiceNumber = document.getElementById('invoice_number').value;
@@ -301,21 +300,36 @@
         const sku = document.getElementById('sku').value;
         const customerId = document.getElementById('customer_id').value;
         
-        // Build URL with current filters
-        const exportUrl = new URL('{{ route("analytics.offline.gross-profit.export") }}');
+        const exportUrl = new URL('{{ route("analytics.offline.gross-profit.export") }}', window.location.origin);
         const params = new URLSearchParams();
-        
         if (startDate) params.append('start_date', startDate);
         if (endDate) params.append('end_date', endDate);
         if (invoiceNumber) params.append('invoice_number', invoiceNumber);
         if (poNumber) params.append('po_number', poNumber);
         if (sku) params.append('sku', sku);
         if (customerId) params.append('customer_id', customerId);
-        
         exportUrl.search = params.toString();
-        
-        // Open export URL in new tab/window
-        window.open(exportUrl.toString(), '_blank');
+
+        var toast = showToast('<div style="width:20px;min-width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div><strong>Export sedang diproses...</strong><br><span style="color:#6B7280;font-size:12px;">Mohon tunggu sebentar</span></div>');
+
+        fetch(exportUrl.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                var disposition = response.headers.get('content-disposition');
+                if (disposition) {
+                    return response.blob().then(function(blob) {
+                        var filename = 'export_gross_profit.xlsx';
+                        var match = disposition.match(/filename="?([^";\n]+)"?/);
+                        if (match) filename = match[1];
+                        triggerDownload(blob, filename);
+                        toast.style.borderLeftColor = '#10B981';
+                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Download berhasil!</strong></div>';
+                        setTimeout(function(){ toast.remove(); }, 3000);
+                    });
+                }
+                throw new Error('Export failed');
+            })
+            .catch(function(err) { showError(toast, err.message || 'Terjadi kesalahan'); });
     }
     
     // Initialize date formatting for DD/MM/YYYY display

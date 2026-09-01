@@ -20,11 +20,11 @@ use PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder;
 
 class TiktokFinanceAnalyticsExport extends DefaultValueBinder implements FromQuery, WithChunkReading, WithHeadings, WithMapping, WithStyles, ShouldAutoSize, WithCustomValueBinder
 {
-    protected $request;
+    protected array $filters;
 
-    public function __construct($request)
+    public function __construct(array $filters = [])
     {
-        $this->request = $request;
+        $this->filters = $filters;
     }
 
     /**
@@ -97,31 +97,31 @@ class TiktokFinanceAnalyticsExport extends DefaultValueBinder implements FromQue
 
         // Apply filters - same as in controller
         // Filter by payment date range
-        if (isset($this->request['from_date']) && !empty($this->request['from_date'])) {
-            $query->whereDate('tanggal_masuk_pembayaran', '>=', $this->request['from_date']);
+        if (isset($this->filters['from_date']) && !empty($this->filters['from_date'])) {
+            $query->whereDate('tanggal_masuk_pembayaran', '>=', $this->filters['from_date']);
         }
-        if (isset($this->request['to_date']) && !empty($this->request['to_date'])) {
-            $query->whereDate('tanggal_masuk_pembayaran', '<=', $this->request['to_date']);
+        if (isset($this->filters['to_date']) && !empty($this->filters['to_date'])) {
+            $query->whereDate('tanggal_masuk_pembayaran', '<=', $this->filters['to_date']);
         }
         
         // Filter by order date range
-        if (isset($this->request['from_order_date']) && !empty($this->request['from_order_date'])) {
-            $query->whereDate('tanggal_order', '>=', $this->request['from_order_date']);
+        if (isset($this->filters['from_order_date']) && !empty($this->filters['from_order_date'])) {
+            $query->whereDate('tanggal_order', '>=', $this->filters['from_order_date']);
         }
-        if (isset($this->request['to_order_date']) && !empty($this->request['to_order_date'])) {
-            $query->whereDate('tanggal_order', '<=', $this->request['to_order_date']);
+        if (isset($this->filters['to_order_date']) && !empty($this->filters['to_order_date'])) {
+            $query->whereDate('tanggal_order', '<=', $this->filters['to_order_date']);
         }
         
-        if (isset($this->request['order_number']) && !empty($this->request['order_number'])) {
-            $query->where('no_order', 'like', '%' . $this->request['order_number'] . '%');
+        if (isset($this->filters['order_number']) && !empty($this->filters['order_number'])) {
+            $query->where('no_order', 'like', '%' . $this->filters['order_number'] . '%');
         }
-        if (isset($this->request['invoice_number']) && !empty($this->request['invoice_number'])) {
-            $query->where('no_invoice', 'like', '%' . $this->request['invoice_number'] . '%');
+        if (isset($this->filters['invoice_number']) && !empty($this->filters['invoice_number'])) {
+            $query->where('no_invoice', 'like', '%' . $this->filters['invoice_number'] . '%');
         }
         
         // Filter by tax ID (sama seperti di controller)
-        if (isset($this->request['tax_id']) && !empty($this->request['tax_id'])) {
-            $taxIds = (array) $this->request['tax_id'];
+        if (isset($this->filters['tax_id']) && !empty($this->filters['tax_id'])) {
+            $taxIds = (array) $this->filters['tax_id'];
             $query->where(function($q) use ($taxIds) {
                 foreach ($taxIds as $taxId) {
                     $q->orWhere('no_invoice', 'like', '%/' . str_pad($taxId, 2, '0', STR_PAD_LEFT));
@@ -129,19 +129,19 @@ class TiktokFinanceAnalyticsExport extends DefaultValueBinder implements FromQue
             });
         }
         
-        if (isset($this->request['payment_date']) && !empty($this->request['payment_date'])) {
-            $query->whereDate('tanggal_masuk_pembayaran', $this->request['payment_date']);
+        if (isset($this->filters['payment_date']) && !empty($this->filters['payment_date'])) {
+            $query->whereDate('tanggal_masuk_pembayaran', $this->filters['payment_date']);
         }
-        if (isset($this->request['min_nominal']) && !empty($this->request['min_nominal'])) {
-            $query->where('nominal_fix', '>=', $this->request['min_nominal']);
+        if (isset($this->filters['min_nominal']) && !empty($this->filters['min_nominal'])) {
+            $query->where('nominal_fix', '>=', $this->filters['min_nominal']);
         }
-        if (isset($this->request['max_nominal']) && !empty($this->request['max_nominal'])) {
-            $query->where('nominal_fix', '<=', $this->request['max_nominal']);
+        if (isset($this->filters['max_nominal']) && !empty($this->filters['max_nominal'])) {
+            $query->where('nominal_fix', '<=', $this->filters['max_nominal']);
         }
-        if (isset($this->request['outstanding_status']) && $this->request['outstanding_status'] !== '') {
-            if ($this->request['outstanding_status'] === '0') {
+        if (isset($this->filters['outstanding_status']) && $this->filters['outstanding_status'] !== '') {
+            if ($this->filters['outstanding_status'] === '0') {
                 $query->where('outstanding', 0);
-            } elseif ($this->request['outstanding_status'] === '1') {
+            } elseif ($this->filters['outstanding_status'] === '1') {
                 $query->where(function($q) {
                     $q->where('outstanding', '>', 0)
                       ->orWhere('outstanding', '<', 0);

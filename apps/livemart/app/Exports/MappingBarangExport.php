@@ -4,7 +4,6 @@ namespace App\Exports;
 
 use App\Models\MappingBarang;
 use App\Models\PlatformProduct;
-use Illuminate\Http\Request;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -12,19 +11,19 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class MappingBarangExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
 {
-    protected Request $request;
+    protected array $filters;
     protected int $counter = 1;
 
-    public function __construct(Request $request)
+    public function __construct(array $filters = [])
     {
-        $this->request = $request;
+        $this->filters = $filters;
     }
 
     public function query()
     {
-        $platform = $this->request->input('platform');
-        $search = $this->request->input('search');
-        $variant = $this->request->input('variant');
+        $platform = $this->filters['platform'] ?? null;
+        $search = $this->filters['search'] ?? null;
+        $variant = $this->filters['variant'] ?? null;
 
         $platformProductIds = PlatformProduct::withoutGlobalScopes()
             ->whereHas('mappingBarang', function ($q) {

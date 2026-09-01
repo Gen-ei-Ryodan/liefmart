@@ -24,7 +24,7 @@
                         <i class="fas fa-download me-1"></i> Ekspor
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow">
-                        <li><a class="dropdown-item" href="{{ route('finance.shopee2.export.excel', request()->all()) }}"><i class="far fa-file-excel me-2"></i>Excel</a></li>
+                        <li><a class="dropdown-item" data-export="{{ route('finance.shopee2.export.excel', request()->all()) }}"><i class="far fa-file-excel me-2"></i>Excel</a></li>
                     </ul>
                 </div>
             </div>

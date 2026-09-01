@@ -220,7 +220,7 @@
                         </a>
                     </div>
                     <div class="col-md-2">
-                        <a href="{{ route('analytics.offline.sales-by-product.export', request()->query()) }}" class="btn btn-success w-100">
+                        <a href="#" data-export="{{ route('analytics.offline.sales-by-product.export', request()->query()) }}" class="btn btn-success w-100">
                             <i class="bi bi-download"></i> Export Excel
                         </a>
                     </div>

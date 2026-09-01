@@ -347,7 +347,6 @@
 
     // Export function that preserves current filters
     function exportData() {
-        // Get current filter values
         const kode = document.getElementById('kode').value;
         const nomor_po = document.getElementById('nomor_po').value;
         const status = document.getElementById('status').value;
@@ -355,26 +354,40 @@
         const start_date = document.getElementById('start_date').value;
         const end_date = document.getElementById('end_date').value;
         
-        // Build URL with current filters
-        const exportUrl = new URL('{{ route("penerimaan.export") }}');
+        const exportUrl = new URL('{{ route("penerimaan.export") }}', window.location.origin);
         const params = new URLSearchParams();
-        
         if (kode) params.append('kode', kode);
         if (nomor_po) params.append('nomor_po', nomor_po);
         if (status) params.append('status', status);
         if (tax_category) params.append('tax_category', tax_category);
         if (start_date) params.append('start_date', start_date);
         if (end_date) params.append('end_date', end_date);
-        
         exportUrl.search = params.toString();
-        
-        // Open export URL in new tab/window
-        window.open(exportUrl.toString(), '_blank');
+
+        var toast = showToast('<div style="width:20px;min-width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div><strong>Export sedang diproses...</strong><br><span style="color:#6B7280;font-size:12px;">Mohon tunggu sebentar</span></div>');
+
+        fetch(exportUrl.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                var disposition = response.headers.get('content-disposition');
+                if (disposition) {
+                    return response.blob().then(function(blob) {
+                        var filename = 'export_penerimaan.xlsx';
+                        var match = disposition.match(/filename="?([^";\n]+)"?/);
+                        if (match) filename = match[1];
+                        triggerDownload(blob, filename);
+                        toast.style.borderLeftColor = '#10B981';
+                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Download berhasil!</strong></div>';
+                        setTimeout(function(){ toast.remove(); }, 3000);
+                    });
+                }
+                throw new Error('Export failed');
+            })
+            .catch(function(err) { showError(toast, err.message || 'Terjadi kesalahan'); });
     }
 
     // Export detail function that preserves current filters
     function exportDetailData() {
-        // Get current filter values
         const kode = document.getElementById('kode').value;
         const nomor_po = document.getElementById('nomor_po').value;
         const status = document.getElementById('status').value;
@@ -382,21 +395,36 @@
         const start_date = document.getElementById('start_date').value;
         const end_date = document.getElementById('end_date').value;
         
-        // Build URL with current filters
-        const exportUrl = new URL('{{ route("penerimaan.export-detail") }}');
+        const exportUrl = new URL('{{ route("penerimaan.export-detail") }}', window.location.origin);
         const params = new URLSearchParams();
-        
         if (kode) params.append('kode', kode);
         if (nomor_po) params.append('nomor_po', nomor_po);
         if (status) params.append('status', status);
         if (tax_category) params.append('tax_category', tax_category);
         if (start_date) params.append('start_date', start_date);
         if (end_date) params.append('end_date', end_date);
-        
         exportUrl.search = params.toString();
-        
-        // Open export URL in new tab/window
-        window.open(exportUrl.toString(), '_blank');
+
+        var toast = showToast('<div style="width:20px;min-width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div><strong>Export sedang diproses...</strong><br><span style="color:#6B7280;font-size:12px;">Mohon tunggu sebentar</span></div>');
+
+        fetch(exportUrl.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(response) {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                var disposition = response.headers.get('content-disposition');
+                if (disposition) {
+                    return response.blob().then(function(blob) {
+                        var filename = 'export_penerimaan_detail.xlsx';
+                        var match = disposition.match(/filename="?([^";\n]+)"?/);
+                        if (match) filename = match[1];
+                        triggerDownload(blob, filename);
+                        toast.style.borderLeftColor = '#10B981';
+                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Download berhasil!</strong></div>';
+                        setTimeout(function(){ toast.remove(); }, 3000);
+                    });
+                }
+                throw new Error('Export failed');
+            })
+            .catch(function(err) { showError(toast, err.message || 'Terjadi kesalahan'); });
     }
 </script>
 @endpush

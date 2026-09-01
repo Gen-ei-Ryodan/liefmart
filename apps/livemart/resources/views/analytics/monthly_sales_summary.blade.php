@@ -166,7 +166,7 @@
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Analisis Saldo Masuk Bulanan</h5>
-                <a href="{{ route('analytics.monthly-sales-summary.export', request()->all()) }}" class="btn btn-light btn-sm">
+                <a href="#" data-export="{{ route('analytics.monthly-sales-summary.export', request()->all()) }}" class="btn btn-light btn-sm">
                     <i class="bi bi-download me-1"></i> Export Excel
                 </a>
             </div>
@@ -241,7 +241,7 @@
                                 </a>
                             </div>
                             <div class="col-md-2">
-                                <a href="{{ route('analytics.monthly-sales-summary.export', request()->query()) }}" class="btn btn-success w-100">
+                                <a href="#" data-export="{{ route('analytics.monthly-sales-summary.export', request()->query()) }}" class="btn btn-success w-100">
                                     <i class="bi bi-download"></i> Export Excel
                                 </a>
                             </div>

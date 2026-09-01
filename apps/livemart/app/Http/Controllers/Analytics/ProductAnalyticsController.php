@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Platform;
 use App\Models\PlatformProduct;
 use App\Models\Product;
+use App\Traits\QueueExport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ use App\Models\OrderItem;
 
 class ProductAnalyticsController extends Controller
 {
+    use QueueExport;
     private function calculateAverageCostForProduct($productId)
     {
         // Weighted average cost from penerimaan_detail records
@@ -1068,7 +1070,11 @@ class ProductAnalyticsController extends Controller
         
         $filename = 'produk-internal-terlaris-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new ProdukInternalTerlarisExport($transformedProducts, $summary, $startDate, $endDate), $filename);
+        return $this->queueExcelExport(
+            new ProdukInternalTerlarisExport($transformedProducts, $summary, $startDate, $endDate),
+            $filename,
+            'Export Produk Internal Terlaris'
+        );
     }
 
     /**
@@ -1211,7 +1217,11 @@ class ProductAnalyticsController extends Controller
         
         $filename = 'produk-platform-terlaris-' . date('Y-m-d') . '.xlsx';
         
-        return Excel::download(new ProdukPlatformTerlarisExport($transformedProducts, $summary, $startDate, $endDate), $filename);
+        return $this->queueExcelExport(
+            new ProdukPlatformTerlarisExport($transformedProducts, $summary, $startDate, $endDate),
+            $filename,
+            'Export Produk Platform Terlaris'
+        );
     }
 
     /**
