@@ -185,7 +185,7 @@
                                 </div>
                                 <div class="col-lg-1 col-md-2 col-sm-3">
                                     <label class="form-label small fw-medium mb-2">Qty <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control shadow-none text-center" id="qty" min="0.01" step="0.01" placeholder="0">
+                                    <input type="number" class="form-control shadow-none text-center" id="qty" min="1" step="1" placeholder="0">
                                 </div>
                                 <div class="col-lg-2 col-md-4 col-sm-4">
                                     <label class="form-label small fw-medium mb-2">Satuan <span class="text-danger">*</span></label>
@@ -1278,8 +1278,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Reset states
         hargaInput.removeAttribute('readonly');
-        diskonPersenInputs.forEach(input => input.removeAttribute('disabled'));
-        diskonNominalInputs.forEach(input => input.removeAttribute('disabled'));
+        diskonPersenInputs.forEach(input => input.removeAttribute('readonly'));
+        diskonNominalInputs.forEach(input => input.removeAttribute('readonly'));
+
+        hargaInput.parentElement.classList.remove('text-muted');
+        diskonPersenInputs.forEach(input => input.parentElement.classList.remove('text-muted'));
+        diskonNominalInputs.forEach(input => input.parentElement.classList.remove('text-muted'));
 
         const priceHistoryContainer = document.getElementById('priceHistoryContainer');
         if (priceHistoryContainer) {

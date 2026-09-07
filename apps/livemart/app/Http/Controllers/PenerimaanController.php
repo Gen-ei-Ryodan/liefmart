@@ -679,7 +679,7 @@ class PenerimaanController extends Controller
         $validator = Validator::make($request->all(), [
             'items' => 'required|array|min:1',
             'items.*.barang_id' => 'required|exists:products,id',
-            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.qty' => 'required|integer|min:1',
             'items.*.satuan_id' => 'required|exists:satuans,id',
             'items.*.harga_hpp' => 'required|numeric|min:0',
             'items.*.diskon_persen_1' => 'nullable|numeric|min:0|max:100',
@@ -803,6 +803,85 @@ class PenerimaanController extends Controller
                 'saved_count' => $savedCount,
                 'total_harga' => $penerimaan->fresh()->total_harga,
                 'message' => "Berhasil menyimpan {$savedCount} item detail"
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update qty detail penerimaan (AJAX)
+     * 
+     * @param Request $request
+     * @param int $id penerimaan_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateDetailQty(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'detail_id' => 'required|exists:penerimaan_detail,id',
+            'qty' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $penerimaan = Penerimaan::findOrFail($id);
+            $detail = PenerimaanDetail::where('id', $request->detail_id)
+                ->where('penerimaan_id', $penerimaan->id)
+                ->firstOrFail();
+
+            $qty = NumberFormatter::formatDecimal($request->qty);
+
+            if ($detail->is_free) {
+                $detail->update([
+                    'qty' => $qty,
+                    'subtotal' => 0,
+                ]);
+            } else {
+                $harga = $detail->harga_hpp;
+                $subtotal = NumberFormatter::multiplyDecimal($qty, $harga);
+
+                for ($i = 1; $i <= 5; $i++) {
+                    $diskonPersen = $detail->{'diskon_persen_' . $i} ?? 0;
+                    $diskonNominal = $detail->{'diskon_nominal_' . $i} ?? 0;
+
+                    if ($diskonPersen > 0) {
+                        $potongan = NumberFormatter::percentageOf($subtotal, $diskonPersen);
+                        $subtotal = NumberFormatter::subtractDecimal($subtotal, $potongan);
+                    } elseif ($diskonNominal > 0) {
+                        $subtotal = NumberFormatter::subtractDecimal($subtotal, $diskonNominal);
+                    }
+                }
+
+                $detail->update([
+                    'qty' => $qty,
+                    'subtotal' => max(0, $subtotal),
+                ]);
+            }
+
+            $penerimaan->recalculateTotalHarga();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Qty berhasil diupdate',
+                'new_subtotal' => $detail->fresh()->subtotal,
+                'new_total' => $penerimaan->fresh()->total_harga,
+                'new_qty' => $detail->fresh()->qty,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

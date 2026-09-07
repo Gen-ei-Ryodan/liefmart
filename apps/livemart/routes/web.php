@@ -142,6 +142,7 @@ Route::prefix('penerimaan')->middleware(['auth', 'main.category', 'prevent-back-
     Route::post('/{id}/finalize', [PenerimaanController::class, 'finalizePenerimaan'])->name('penerimaan.finalize')->middleware('permission:warehouse.view');
     Route::post('/{id}/update-header', [PenerimaanController::class, 'updateHeader'])->name('penerimaan.update-header')->middleware('permission:warehouse.edit');
     Route::post('/{id}/clear-details', [PenerimaanController::class, 'clearDetails'])->name('penerimaan.clear-details')->middleware('permission:warehouse.edit');
+    Route::post('/{id}/update-detail-qty', [PenerimaanController::class, 'updateDetailQty'])->name('penerimaan.update-detail-qty')->middleware('permission:warehouse.view');
     Route::post('/{id}/finalize-update', [PenerimaanController::class, 'finalizePenerimaanUpdate'])->name('penerimaan.finalize-update')->middleware('permission:warehouse.edit');
     
     // Price history API route

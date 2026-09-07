@@ -478,7 +478,7 @@
                                                     </td>
                                                     <td class="text-center">
                                                         <span
-                                                            class="badge bg-light text-dark rounded-pill px-3 py-2">{{ $detail->qty }}</span>
+                                                            class="badge bg-light text-dark rounded-pill px-3 py-2">{{ intval($detail->qty) }}</span>
                                                     </td>
                                                     <td class="text-center">
                                                         {{ $detail->satuan->name }}

@@ -100,7 +100,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Total Penerimaan</h5>
-                        <h3 class="mb-0">Rp {{ number_format(round($penerimaan->total_harga), 0, ',', '.') }}</h3>
+                        <h3 class="mb-0" id="totalHargaDisplay">Rp {{ number_format(round($penerimaan->total_harga), 0, ',', '.') }}</h3>
                     </div>
                 </div>
             </div>
@@ -179,11 +179,33 @@
                                         @if($detail->product->status_pajak)
                                             <div class="text-muted small mt-1">Status: {{ $detail->product->status_pajak }}</div>
                                         @endif
-                                        @if($detail->detail_catatan)
-                                            <div class="text-muted small mt-1">{{ $detail->detail_catatan }}</div>
+                                        @if($detail->catatan)
+                                            <div class="text-muted small mt-1">{{ $detail->catatan }}</div>
                                         @endif
                                     </td>
-                                    <td class="text-center">{{ $detail->qty }}</td>
+                                    <td class="text-center">
+                                        @if($penerimaan->status == 'Unlocated')
+                                        <div class="d-inline-flex align-items-center gap-1" id="qty-display-{{ $detail->id }}">
+                                            <span id="qty-text-{{ $detail->id }}">{{ intval($detail->qty) }}</span>
+                                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 border-0" onclick="startEditQty({{ $detail->id }}, {{ intval($detail->qty) }})" title="Edit Qty">
+                                                <i class="fas fa-pen fa-xs"></i>
+                                            </button>
+                                        </div>
+                                        <div class="d-none" id="qty-edit-{{ $detail->id }}">
+                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                                <input type="number" class="form-control form-control-sm" id="qty-input-{{ $detail->id }}" value="{{ intval($detail->qty) }}" min="1" step="1">
+                                                <button class="btn btn-success btn-sm" type="button" onclick="saveEditQty({{ $detail->id }}, {{ $penerimaan->id }})">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="btn btn-secondary btn-sm" type="button" onclick="cancelEditQty({{ $detail->id }}, {{ intval($detail->qty) }})">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        @else
+                                        {{ intval($detail->qty) }}
+                                        @endif
+                                    </td>
                                     <td>{{ $detail->satuan->name }}</td>
                                     <td>
                                         @if($detail->is_free)
@@ -346,11 +368,90 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Inisialisasi tooltips jika ada
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
     });
+
+    function startEditQty(detailId, currentQty) {
+        document.getElementById('qty-display-' + detailId).classList.add('d-none');
+        document.getElementById('qty-edit-' + detailId).classList.remove('d-none');
+        var input = document.getElementById('qty-input-' + detailId);
+        input.focus();
+        input.select();
+    }
+
+    function cancelEditQty(detailId, currentQty) {
+        document.getElementById('qty-display-' + detailId).classList.remove('d-none');
+        document.getElementById('qty-edit-' + detailId).classList.add('d-none');
+        document.getElementById('qty-input-' + detailId).value = currentQty;
+    }
+
+    function saveEditQty(detailId, penerimaanId) {
+        var input = document.getElementById('qty-input-' + detailId);
+        var newQty = parseFloat(input.value);
+
+        if (isNaN(newQty) || newQty <= 0) {
+            input.classList.add('is-invalid');
+            return;
+        }
+        input.classList.remove('is-invalid');
+
+        var saveBtn = input.parentElement.querySelector('.btn-success');
+        var originalHTML = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        saveBtn.disabled = true;
+
+        fetch('/penerimaan/' + penerimaanId + '/update-detail-qty', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                detail_id: detailId,
+                qty: newQty
+            })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(result) {
+            if (result.success) {
+                document.getElementById('qty-text-' + detailId).textContent = result.new_qty;
+                document.getElementById('qty-display-' + detailId).classList.remove('d-none');
+                document.getElementById('qty-edit-' + detailId).classList.add('d-none');
+                input.value = result.new_qty;
+
+                var totalEl = document.getElementById('totalHargaDisplay');
+                if (totalEl) {
+                    totalEl.textContent = 'Rp ' + formatRupiahTotal(result.new_total);
+                }
+
+                var subtotalCell = document.getElementById('qty-display-' + detailId).closest('tr').querySelector('td:last-child');
+                if (subtotalCell) {
+                    subtotalCell.textContent = 'Rp ' + formatRupiah(result.new_subtotal);
+                }
+            } else {
+                alert('Gagal update qty: ' + (result.message || 'Terjadi kesalahan'));
+            }
+        })
+        .catch(function(error) {
+            alert('Terjadi kesalahan: ' + error.message);
+        })
+        .finally(function() {
+            saveBtn.innerHTML = originalHTML;
+            saveBtn.disabled = false;
+        });
+    }
+
+    function formatRupiah(amount) {
+        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+    }
+
+    function formatRupiahTotal(amount) {
+        return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+    }
 </script>
 @endpush

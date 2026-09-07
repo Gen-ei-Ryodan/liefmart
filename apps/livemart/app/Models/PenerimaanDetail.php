@@ -34,7 +34,7 @@ class PenerimaanDetail extends Model
     ];
     
     protected $casts = [
-        'qty' => 'decimal:2',
+        'qty' => 'integer',
         'harga_hpp' => 'decimal:2',
         'diskon_persen_1' => 'decimal:2',
         'diskon_nominal_1' => 'decimal:2',
