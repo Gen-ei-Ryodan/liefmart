@@ -1,145 +1,18 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Penjualan Offline by Produk</title>
+@extends('layouts.app')
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+@section('title', 'Data Penjualan Offline by Produk')
 
-    <style>
-        :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --success-color: #0bb4aa;
-            --info-color: #4cc9f0;
-            --warning-color: #f72585;
-            --dark-color: #212529;
-            --light-color: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container-fluid {
-            padding: 20px;
-            max-width: 1440px;
-            margin: 0 auto;
-        }
-
-        .card-header {
-            border-radius: 10px 10px 0 0 !important;
-            font-weight: 600;
-            padding: 15px 20px;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .btn-outline-secondary {
-            color: #6c757d;
-            border-color: #6c757d;
-        }
-
-        .btn-outline-secondary:hover {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .table-dark th {
-            background-color: var(--dark-color) !important;
-            color: white !important;
-            font-weight: 500;
-        }
-
-        .table-striped tbody tr:nth-of-type(odd) {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-
-        /* Efek hover pada baris tabel */
-        .table-row-hover {
-            transition: all 0.2s ease;
-        }
-
-        .table-row-hover:hover {
-            background-color: rgba(99, 102, 241, 0.04) !important;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Product badge styling */
-        .product-badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-width: 120px;
-            text-align: center;
-            letter-spacing: 0.3px;
-            background-color: #0bb4aa;
-            color: white;
-        }
-
-        /* Breadcrumb */
-        .breadcrumb {
-            background-color: transparent;
-            padding: 0;
-            margin-bottom: 20px;
-        }
-
-        .breadcrumb-item a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .breadcrumb-item.active {
-            color: #6c757d;
-        }
-
-/* Table responsive */
-        .table-responsive {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        /* Chart container */
-        .chart-container {
-            position: relative;
-            margin: 20px 0;
-            height: 350px;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item">Analytics</li>
-            <li class="breadcrumb-item"><a href="{{ route('analytics.offline.index') }}">Offline Sales</a></li>
-            <li class="breadcrumb-item active">Data Penjualan by Produk</li>
-        </ol>
-    </nav>
-
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Data Penjualan Offline by Produk</h5>
-        </div>
-        <div class="card-body">
+@section('content')
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="bi-box-seam me-2"></i>Data Penjualan Offline by Produk
+                    </h5>
+                </div>
+                <div class="card-body p-4">
             <!-- Filter Form -->
             <form method="GET" action="{{ route('analytics.offline.sales-by-product') }}" id="filter-form" class="mb-4">
                 <div class="row g-3 align-items-end">
@@ -330,14 +203,16 @@
                 </table>
             </div>
             @endif
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Bootstrap JS Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@endsection
 
+@section('scripts')
+<!-- Bootstrap JS Bundle with Popper -->
 @if($summary['total_products'] > 0)
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -458,5 +333,4 @@
     });
 </script>
 @endif
-</body>
-</html>
+@endsection

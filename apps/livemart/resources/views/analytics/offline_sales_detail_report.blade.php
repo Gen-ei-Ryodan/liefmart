@@ -1,232 +1,83 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Detail Penjualan Offline</title>
+@extends('layouts.app')
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+@section('title', 'Laporan Detail Penjualan Offline')
 
-    <style>
-        :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --success-color: #0bb4aa;
-            --info-color: #4cc9f0;
-            --warning-color: #f72585;
-            --dark-color: #212529;
-            --light-color: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container-fluid {
-            padding: 20px;
-            max-width: 1440px;
-            margin: 0 auto;
-        }
-
-        .card-header {
-            border-radius: 10px 10px 0 0 !important;
-            font-weight: 600;
-            padding: 15px 20px;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        .btn-outline-secondary {
-            color: #6c757d;
-            border-color: #6c757d;
-        }
-
-        .btn-outline-secondary:hover {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .table-dark th {
-            background-color: var(--dark-color) !important;
-            color: white !important;
-            font-weight: 500;
-        }
-
-        .table-striped tbody tr:nth-of-type(odd) {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-
-        /* Efek hover pada baris tabel */
-        .table-row-hover {
-            transition: all 0.2s ease;
-        }
-
-        .table-row-hover:hover {
-            background-color: rgba(99, 102, 241, 0.04) !important;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Customer badge styling */
-        .customer-badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            min-width: 120px;
-            text-align: center;
-            letter-spacing: 0.3px;
-            background-color: #6c757d;
-            color: white;
-        }
-
-        /* Breadcrumb */
-        .breadcrumb {
-            background-color: transparent;
-            padding: 0;
-            margin-bottom: 20px;
-        }
-
-        .breadcrumb-item a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .breadcrumb-item.active {
-            color: #6c757d;
-        }
-
-/* Table responsive */
-        .table-responsive {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        /* Analytics menu cards */
-        .analytics-menu-card {
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            height: 100%;
-        }
-
-        .analytics-menu-card:hover {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .analytics-menu-card .card-title {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--primary-color);
-        }
-
-        .analytics-menu-card .card-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-        }
-
-        .analytics-menu-card:hover .card-icon {
-            transform: scale(1.1);
-            transition: transform 0.3s ease;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item">Analytics</li>
-            <li class="breadcrumb-item active">Penjualan Offline</li>
-        </ol>
-    </nav>
-
-    <!-- Analytics Menu -->
-    <div class="row mb-4">
+@section('content')
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Menu Analisis Penjualan Offline</h5>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="bi-receipt me-2"></i>Laporan Detail Penjualan Offline
+                    </h5>
                 </div>
-                <div class="card-body">
-                    <div class="row">
+                <div class="card-body p-4">
+                    <!-- Analytics Menu -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="row">
                         <div class="col-md-3 mb-4">
-                            <a href="{{ route('analytics.offline.monthly-sales-summary') }}" class="analytics-menu-card">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        <div class="card-icon">
-                                            <i class="bi bi-calendar-check"></i>
+                            <a href="{{ route('analytics.offline.monthly-sales-summary') }}" class="analytics-menu-card text-decoration-none">
+                                <div class="card bg-primary text-white h-100">
+                                    <div class="card-body text-center py-4">
+                                        <div class="card-icon mb-3">
+                                            <i class="bi bi-calendar-check" style="font-size: 2rem;"></i>
                                         </div>
                                         <h5 class="card-title">Ringkasan Bulanan</h5>
-                                        <p class="card-text">Analisis penjualan per bulan dalam satu tahun</p>
+                                        <p class="card-text opacity-75 small">Analisis penjualan per bulan dalam satu tahun</p>
                                     </div>
                                 </div>
                             </a>
                         </div>
                         <div class="col-md-3 mb-4">
-                            <a href="{{ route('analytics.offline.sales-by-customer') }}" class="analytics-menu-card">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        <div class="card-icon">
-                                            <i class="bi bi-people"></i>
+                            <a href="{{ route('analytics.offline.sales-by-customer') }}" class="analytics-menu-card text-decoration-none">
+                                <div class="card bg-success text-white h-100">
+                                    <div class="card-body text-center py-4">
+                                        <div class="card-icon mb-3">
+                                            <i class="bi bi-people" style="font-size: 2rem;"></i>
                                         </div>
                                         <h5 class="card-title">Penjualan per Customer</h5>
-                                        <p class="card-text">Analisis penjualan berdasarkan customer</p>
+                                        <p class="card-text opacity-75 small">Analisis penjualan berdasarkan customer</p>
                                     </div>
                                 </div>
                             </a>
                         </div>
                         <div class="col-md-3 mb-4">
-                            <a href="{{ route('analytics.offline.sales-by-product') }}" class="analytics-menu-card">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        <div class="card-icon">
-                                            <i class="bi bi-box-seam"></i>
+                            <a href="{{ route('analytics.offline.sales-by-product') }}" class="analytics-menu-card text-decoration-none">
+                                <div class="card bg-info text-white h-100">
+                                    <div class="card-body text-center py-4">
+                                        <div class="card-icon mb-3">
+                                            <i class="bi bi-box-seam" style="font-size: 2rem;"></i>
                                         </div>
                                         <h5 class="card-title">Penjualan per Produk</h5>
-                                        <p class="card-text">Analisis penjualan berdasarkan produk</p>
+                                        <p class="card-text opacity-75 small">Analisis penjualan berdasarkan produk</p>
                                     </div>
                                 </div>
                             </a>
                         </div>
                         <div class="col-md-3 mb-4">
-                            <a href="{{ route('analytics.offline.sales-detail-report') }}" class="analytics-menu-card">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        <div class="card-icon">
-                                            <i class="bi bi-file-earmark-text"></i>
+                            <a href="{{ route('analytics.offline.sales-detail-report') }}" class="analytics-menu-card text-decoration-none">
+                                <div class="card bg-warning text-white h-100">
+                                    <div class="card-body text-center py-4">
+                                        <div class="card-icon mb-3">
+                                            <i class="bi bi-file-earmark-text" style="font-size: 2rem;"></i>
                                         </div>
                                         <h5 class="card-title">Laporan Detail</h5>
-                                        <p class="card-text">Laporan detail penjualan offline</p>
+                                        <p class="card-text opacity-75 small">Laporan detail penjualan offline</p>
                                     </div>
                                 </div>
                             </a>
                         </div>
                         <div class="col-md-3 mb-4">
-                            <a href="{{ route('analytics.offline.gross-profit') }}" class="analytics-menu-card">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        <div class="card-icon">
-                                            <i class="bi bi-graph-up"></i>
+                            <a href="{{ route('analytics.offline.gross-profit') }}" class="analytics-menu-card text-decoration-none">
+                                <div class="card bg-danger text-white h-100">
+                                    <div class="card-body text-center py-4">
+                                        <div class="card-icon mb-3">
+                                            <i class="bi bi-graph-up" style="font-size: 2rem;"></i>
                                         </div>
                                         <h5 class="card-title">Gross Profit</h5>
-                                        <p class="card-text">Analisis profit dan margin penjualan offline</p>
+                                        <p class="card-text opacity-75 small">Analisis profit dan margin penjualan offline</p>
                                     </div>
                                 </div>
                             </a>
@@ -238,9 +89,11 @@
     </div>
 
     <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Laporan Detail Penjualan Offline</h5>
-        </div>
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="bi-receipt me-2"></i>Laporan Detail Penjualan Offline
+                    </h5>
+                </div>
         <div class="card-body">
             <!-- Filter Form -->
             <form method="GET" action="{{ route('analytics.offline.sales-detail-report') }}" id="filter-form" class="mb-4">
@@ -525,13 +378,16 @@
                 </table>
             </div>
             @endif
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+@endsection
+
+@section('scripts')
 <!-- Bootstrap JS Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     // Set default date to today if not already set
     document.addEventListener('DOMContentLoaded', function() {
@@ -554,5 +410,4 @@
         }
     });
 </script>
-</body>
-</html>
+@endsection

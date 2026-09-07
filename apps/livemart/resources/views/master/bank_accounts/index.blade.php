@@ -23,7 +23,7 @@
                     <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-university me-2"></i>Daftar Rekening Bank
                     </h5>
-                    <a href="{{ route('bank-accounts.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <a href="{{ route('bank-accounts.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus me-1"></i> Tambah Rekening Bank
                     </a>
                 </div>

@@ -11,11 +11,11 @@
                     <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-store-alt me-2"></i>Daftar Retur Penjualan Offline
                     </h5>
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('retur-offline.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <div>
+                        <a href="{{ route('retur-offline.create') }}" class="btn btn-sm btn-primary me-2">
                             <i class="fas fa-plus me-1"></i> Buat Retur Baru
                         </a>
-                        <a href="#" data-export="{{ route('retur-offline.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
+                        <a href="#" data-export="{{ route('retur-offline.export') }}" class="btn btn-sm btn-success">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                     </div>

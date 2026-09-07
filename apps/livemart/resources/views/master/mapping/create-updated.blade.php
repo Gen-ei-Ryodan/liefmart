@@ -5,14 +5,14 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <div class="form-card">
-        <div class="form-header">
-            <h2><i class="fas fa-link me-2"></i>Tambah Mapping Produk Baru</h2>
-            <p>Hubungkan produk platform dengan produk master untuk manajemen inventori yang lebih baik</p>
-        </div>
-        
-        <div class="form-body">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 fw-bold text-primary"><i class="fas fa-link me-2"></i>Tambah Mapping Produk Baru</h5>
+                </div>
+                <div class="card-body p-4">
             <form action="{{ route('master.mapping.store') }}" method="POST" id="mappingForm">
                 @csrf
                 <input type="hidden" name="debug" value="1">
@@ -129,6 +129,8 @@
             </form>
         </div>
     </div>
+    </div>
+</div>
 </div>
 @endsection
 

@@ -1,58 +1,17 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gross Profit Average per Master Produk</title>
+@extends('layouts.app')
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-    <!-- TomSelect CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/design-system.css') }}">
+@section('title', 'Gross Profit Average per Master Produk')
 
-    <style>
-        :root { --primary-color: #4361ee; --secondary-color: #3f37c9; --success-color: #0bb4aa; --info-color: #4cc9f0; --warning-color: #f72585; --dark-color: #212529; }
-        body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f7fa; color: #333; line-height: 1.6; }
-        .container-fluid { padding: 20px; max-width: 1440px; margin: 0 auto; }
-        .card-header { border-radius: 8px 8px 0 0; font-weight: 600; padding: 15px 20px; background-color: var(--primary-color); color: white; }
-        .card-body { padding: 20px; }
-        .table-dark th { background-color: var(--dark-color); color: white; font-weight: 500; }
-        .table-responsive { max-height: 800px; overflow-y: auto; overflow-x: auto; }
-        .table tbody tr:hover { background-color: rgba(0, 0, 0, 0.03); }
-        .table th:nth-child(4), .table td:nth-child(4) { min-width: 300px; word-wrap: break-word; }
-        .table th:nth-child(8), .table td:nth-child(8) { min-width: 300px; word-wrap: break-word; }
-        .summary-card { border-radius: 8px; color: white; height: 100%; min-height: 120px; }
-        .summary-card .card-body { padding: 1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .summary-card h6 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; text-align: center; }
-        .summary-card h3, .summary-card h4 { font-weight: 700; margin-bottom: 0.25rem; text-align: center; }
-        .platform-box { display: inline-block; padding: 5px 10px; border-radius: 6px; font-weight: 500; }
-        .platform-shopee { background-color: #f53d2d; color: white; }
-        .platform-tiktok { background-color: #000000; color: white; }
-        .ts-wrapper { border-radius: 6px; }
-        .ts-wrapper .ts-control { border: 1px solid #ced4da; border-radius: 6px; padding: 10px 15px; }
-        .skeleton-loader { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s ease-in-out infinite; height: 40px; border-radius: 4px; margin: 5px 0; }
-        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        #table-container { min-height: 400px; }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb" style="background-color: transparent; padding: 0; margin-bottom: 20px;">
-                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item">Analytics</li>
-                <li class="breadcrumb-item active">Gross Profit Average per Master Produk</li>
-            </ol>
-        </nav>
-
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Gross Profit Average per Master Produk</h5>
-            </div>
+@section('content')
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="bi bi-graph-up me-2"></i>Gross Profit Average per Master Produk
+                    </h5>
+                </div>
             <div class="card-body">
                 <!-- Quick Date Range Filters -->
                 <div class="mb-4">
@@ -368,15 +327,15 @@
             </div>
         </div>
     </div>
+</div>
+    </div>
 
     <!-- Modal Container (Lazy loaded) -->
     <div id="modal-container"></div>
 
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+@endsection
 
+@section('scripts')
     <script>
         (function() {
             'use strict';
@@ -854,5 +813,4 @@
             });
         })();
     </script>
-</body>
-</html>
+@endsection

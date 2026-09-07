@@ -4,37 +4,6 @@
 @include('master.mapping.styles')
 
 <style>
-    .form-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-    
-    .form-header {
-        background: linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%);
-        color: white;
-        padding: 2rem;
-        text-align: center;
-    }
-    
-    .form-header h2 {
-        margin: 0;
-        font-weight: 700;
-        font-size: 1.5rem;
-    }
-    
-    .form-header p {
-        margin: 0.5rem 0 0 0;
-        opacity: 0.9;
-        font-size: 0.95rem;
-    }
-    
-    .form-body {
-        padding: 2rem;
-    }
-    
     .form-section {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -221,10 +190,6 @@
     .badge-warning { background: #fef3c7; color: #92400e; }
     
     @media (max-width: 768px) {
-        .form-body {
-            padding: 1rem;
-        }
-        
         .add-product-form {
             flex-direction: column;
         }
@@ -243,14 +208,14 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
-    <div class="form-card">
-        <div class="form-header">
-            <h2><i class="fas fa-plus-circle me-2"></i>Tambah Mapping Produk</h2>
-            <p>Tambahkan produk master untuk produk platform ini</p>
-        </div>
-        
-        <div class="form-body">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 fw-bold text-primary"><i class="fas fa-link me-2"></i>Edit Produk Mapping</h5>
+                </div>
+                <div class="card-body p-4">
             <!-- Platform Information Section -->
             <div class="form-section">
                 <h6 class="form-section-title">
@@ -377,6 +342,8 @@
             </a>
         </div>
     </div>
+    </div>
+</div>
 </div>
 @endsection
 

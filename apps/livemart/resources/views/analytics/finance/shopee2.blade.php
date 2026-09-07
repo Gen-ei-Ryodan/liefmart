@@ -1,29 +1,29 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
-            <h1 class="h3 mb-0 text-gray-800">Analytic Keuangan Shopee Liefmarket</h1>
-            <p class="text-muted small mb-0">Analisis data transaksi keuangan Shopee Liefmarket</p>
-        </div>
-        <div class="col-md-6 text-end">
-            <div class="btn-group shadow-sm" role="group">
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#filterModal">
-                    <i class="fas fa-filter me-1"></i> Filter
-                </button>
-                <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-download me-1"></i> Export
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow">
-                        <li><a class="dropdown-item" data-export="{{ route('analytics.finance.shopee2.export', request()->all()) }}"><i class="far fa-file-excel me-2"></i>Excel</a></li>
-                    </ul>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Analytic Keuangan Shopee Liefmarket
+                    </h5>
+                    <div>
+                        <button class="btn btn-sm btn-secondary me-2" data-bs-toggle="modal" data-bs-target="#filterModal">
+                            <i class="fas fa-filter me-1"></i> Filter
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item" data-export="{{ route('analytics.finance.shopee2.export', request()->all()) }}"><i class="far fa-file-excel me-2"></i>Excel</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>  
+                <div class="card-body p-4">
 
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -56,105 +56,102 @@
     @endif
 
     <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card dashboard-card shadow-hover h-100 border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-uppercase text-primary fw-bold small">Total Transaksi</div>
-                        <div class="card-icon-container bg-primary-soft">
-                            <i class="fas fa-receipt text-primary"></i>
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body bg-primary text-white rounded-3 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold mb-0">{{ number_format($totalCount ?? $transactions->total(), 0, ',', '.') }}</h4>
+                            <div class="text-white opacity-75 small mt-1">Total Transaksi</div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end">
-                        <h3 class="fw-bold mb-0 text-primary">{{ number_format($totalCount ?? $transactions->total(), 0, ',', '.') }}</h3>
-                        <div class="ms-2 small text-muted">transaksi</div>
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                            <i class="fas fa-receipt text-white"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card dashboard-card shadow-hover h-100 border-start border-success border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-uppercase text-success fw-bold small">Total Nominal Fix</div>
-                        <div class="card-icon-container bg-success-soft">
-                            <i class="fas fa-money-bill-wave text-success"></i>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body bg-success text-white rounded-3 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            @php
+                                $totalNominalFix = $totalNominalFix ?? $transactions->sum('nominal_fix');
+                            @endphp
+                            <h4 class="fw-bold mb-0">Rp {{ number_format($totalNominalFix, 0, ',', '.') }}</h4>
+                            <div class="text-white opacity-75 small mt-1">Total Nominal Fix</div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end">
-                        @php
-                            $totalNominalFix = $totalNominalFix ?? $transactions->sum('nominal_fix');
-                        @endphp
-                        <h3 class="fw-bold mb-0 text-success">Rp {{ number_format($totalNominalFix, 0, ',', '.') }}</h3>
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                            <i class="fas fa-money-bill-wave text-white"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card dashboard-card shadow-hover h-100 border-start border-info border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-uppercase text-info fw-bold small">Total Saldo Masuk</div>
-                        <div class="card-icon-container bg-info-soft">
-                            <i class="fas fa-hand-holding-usd text-info"></i>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body bg-info text-white rounded-3 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            @php
+                                $totalSaldoMasuk = $totalSaldoMasuk ?? $transactions->sum('saldo_masuk');
+                            @endphp
+                            <h4 class="fw-bold mb-0">Rp {{ number_format($totalSaldoMasuk, 0, ',', '.') }}</h4>
+                            <div class="text-white opacity-75 small mt-1">Total Saldo Masuk</div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end">
-                        @php
-                            $totalSaldoMasuk = $totalSaldoMasuk ?? $transactions->sum('saldo_masuk');
-                        @endphp
-                        <h3 class="fw-bold mb-0 text-info">Rp {{ number_format($totalSaldoMasuk, 0, ',', '.') }}</h3>
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                            <i class="fas fa-hand-holding-usd text-white"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card dashboard-card shadow-hover h-100 border-start border-danger border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-uppercase text-danger fw-bold small">Total Outstanding</div>
-                        <div class="card-icon-container bg-danger-soft">
-                            <i class="fas fa-exclamation-circle text-danger"></i>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body bg-danger text-white rounded-3 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            @php
+                                $totalOutstanding = $totalOutstanding ?? $transactions->sum('outstanding');
+                            @endphp
+                            <h4 class="fw-bold mb-0">Rp {{ number_format($totalOutstanding, 0, ',', '.') }}</h4>
+                            <div class="text-white opacity-75 small mt-1">Total Outstanding</div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end">
-                        @php
-                            $totalOutstanding = $totalOutstanding ?? $transactions->sum('outstanding');
-                        @endphp
-                        <h3 class="fw-bold mb-0 text-danger">Rp {{ number_format($totalOutstanding, 0, ',', '.') }}</h3>
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                            <i class="fas fa-exclamation-circle text-white"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card dashboard-card shadow-hover h-100 border-start border-secondary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-uppercase text-secondary fw-bold small">Analytics View</div>
-                        <div class="card-icon-container bg-secondary-soft">
-                            <i class="fas fa-chart-bar text-secondary"></i>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body bg-secondary text-white rounded-3 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold mb-0">-</h4>
+                            <div class="text-white opacity-75 small mt-1">Analytics View</div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end">
-                        <h3 class="fw-bold mb-0 text-secondary">-</h3>
-                        <div class="ms-2 small text-muted">only</div>
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                            <i class="fas fa-chart-bar text-white"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 col-sm-6 mb-3">
-            <div class="card dashboard-card shadow-hover h-100 border-start border-secondary border-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-uppercase text-secondary fw-bold small">Paid Transactions</div>
-                        <div class="card-icon-container bg-secondary-soft">
-                            <i class="fas fa-check-circle text-secondary"></i>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-3 h-100">
+                <div class="card-body bg-secondary text-white rounded-3 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold mb-0">-</h4>
+                            <div class="text-white opacity-75 small mt-1">Paid Transactions</div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end">
-                        <h3 class="fw-bold mb-0 text-secondary">-</h3>
-                        <div class="ms-2 small text-muted">focus</div>
+                        <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                            <i class="fas fa-check-circle text-white"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -572,6 +569,10 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
                 </div>
             </div>
         </div>

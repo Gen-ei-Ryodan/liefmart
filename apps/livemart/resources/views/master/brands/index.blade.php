@@ -11,7 +11,7 @@
                     <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-tag me-2"></i>Data Brand
                     </h5>
-                    <a href="{{ route('brands.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <a href="{{ route('brands.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus me-1"></i> Tambah Brand
                     </a>
                 </div>

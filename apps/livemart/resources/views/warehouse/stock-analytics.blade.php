@@ -30,23 +30,24 @@
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
     <div class="row">
         <div class="col-12">
-            <!-- Header Section -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 text-primary fw-bold">
-                    <i class="fas fa-chart-bar me-2"></i> Analisis Stok Barang
-                </h1>
-                <div>
-                    <button id="exportSelectedBtn" class="btn btn-info shadow-sm me-2" disabled>
-                        <i class="fas fa-file-excel me-1"></i> Export Terpilih
-                    </button>
-                    <a href="#" data-export="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-success shadow-sm">
-                        <i class="fas fa-file-excel me-1"></i> Export Semua
-                    </a>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Analisis Stok Barang
+                    </h5>
+                    <div>
+                        <button id="exportSelectedBtn" class="btn btn-sm btn-info me-2" disabled>
+                            <i class="fas fa-file-excel me-1"></i> Export Terpilih
+                        </button>
+                        <a href="#" data-export="{{ route('warehouse.stock.export', request()->except(['page', 'per_page'])) }}" class="btn btn-sm btn-success">
+                            <i class="fas fa-file-excel me-1"></i> Export Semua
+                        </a>
+                    </div>
                 </div>
-            </div>
+                <div class="card-body p-4">
 
             <!-- Stock Summary Cards -->
             <div class="row mb-4 g-3">
@@ -363,6 +364,9 @@
                 </div>
                 <div>
                     {{ $groupedStocks->appends(request()->query())->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
+            </div>
                 </div>
             </div>
         </div>

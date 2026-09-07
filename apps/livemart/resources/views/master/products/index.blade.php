@@ -18,12 +18,12 @@
                         $exportCsvUrl = route('products.export', ['format' => 'csv']) . $exportSuffix;
                         $exportPdfUrl = route('products.export', ['format' => 'pdf']) . $exportSuffix;
                     @endphp
-                    <div class="d-flex gap-2">
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-file-export me-1"></i> Export
+                    <div>
+                        <div class="btn-group me-2" role="group">
+                            <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
                                 <li>
                                     <a class="dropdown-item" href="{{ $exportXlsxUrl }}">
                                         <i class="fas fa-file-excel me-2 text-success"></i> Excel (.xlsx)
@@ -41,7 +41,7 @@
                                 </li>
                             </ul>
                         </div>
-                        <a href="{{ route('products.create') }}" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
+                        <a href="{{ route('products.create') }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-plus me-1"></i> Tambah Produk
                         </a>
                     </div>

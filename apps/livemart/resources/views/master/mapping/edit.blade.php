@@ -6,37 +6,6 @@
 @include('master.mapping.styles')
 
 <style>
-    .form-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
-        overflow: hidden;
-    }
-    
-    .form-header {
-        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-        color: white;
-        padding: 2rem;
-        text-align: center;
-    }
-    
-    .form-header h2 {
-        margin: 0;
-        font-weight: 700;
-        font-size: 1.5rem;
-    }
-    
-    .form-header p {
-        margin: 0.5rem 0 0 0;
-        opacity: 0.9;
-        font-size: 0.95rem;
-    }
-    
-    .form-body {
-        padding: 2rem;
-    }
-    
     .form-section {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
@@ -357,10 +326,6 @@
     .badge-primary { background: #dbeafe; color: #1e40af; }
     
     @media (max-width: 768px) {
-        .form-body {
-            padding: 1rem;
-        }
-        
         .mapping-item-header {
             flex-direction: column;
             align-items: stretch;
@@ -393,30 +358,35 @@
 @endpush
 
 @section('content')
-<div class="container-fluid animate__animated animate__fadeIn animate__faster">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="fw-bold mb-1 text-gradient">Edit Mapping Produk</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('master.mapping.index') }}" class="text-decoration-none">Mapping Produk</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
-                </ol>
-            </nav>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('master.mapping.version-history', $mapping->platform_product_id) }}" class="btn btn-outline-primary rounded-pill px-4">
-                <i class="fas fa-history me-2"></i> Riwayat Versi
-            </a>
-            <a href="{{ route('master.mapping.index') }}" class="btn btn-outline-primary rounded-pill px-4">
-                <i class="fas fa-arrow-left me-2"></i> Kembali
-            </a>
-        </div>
-    </div>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="fw-bold mb-1 text-gradient">Edit Mapping Produk</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('master.mapping.index') }}" class="text-decoration-none">Mapping Produk</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('master.mapping.version-history', $mapping->platform_product_id) }}" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="fas fa-history me-2"></i> Riwayat Versi
+                    </a>
+                    <a href="{{ route('master.mapping.index') }}" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="fas fa-arrow-left me-2"></i> Kembali
+                    </a>
+                </div>
+            </div>
 
-    <div class="form-card">
-        <div class="form-body">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 fw-bold text-primary"><i class="fas fa-link me-2"></i>Edit Mapping Produk</h5>
+                </div>
+                <div class="card-body p-4">
             <!-- Alert Messages -->
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show mb-4" role="alert" style="border-radius: 12px; border: none; background: #d1fae5; color: #065f46;">
@@ -652,6 +622,8 @@
             </div>
         </div>
     </div>
+    </div>
+</div>
 </div>
 @endsection
 

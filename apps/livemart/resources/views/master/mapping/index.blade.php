@@ -284,11 +284,11 @@
             <h5 class="m-0 fw-bold text-primary">
                 <i class="fas fa-project-diagram me-2"></i>Mapping Produk
             </h5>
-            <div class="d-flex gap-2">
-                <a href="#" data-export="{{ route('master.mapping.export.excel', request()->query()) }}" class="btn btn-sm btn-success rounded-pill px-3">
+            <div>
+                <a href="#" data-export="{{ route('master.mapping.export.excel', request()->query()) }}" class="btn btn-sm btn-success me-2">
                     <i class="fas fa-file-excel me-1"></i> Export All
                 </a>
-                <a href="{{ route('master.mapping.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                <a href="{{ route('master.mapping.create') }}" class="btn btn-sm btn-primary">
                     <i class="fas fa-plus me-1"></i> Tambah Mapping
                 </a>
             </div>

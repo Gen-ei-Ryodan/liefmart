@@ -183,56 +183,64 @@
                 </div>
             </div>
             
-            <!-- Stock Summary Cards dengan tampilan yang menarik-->
+            <!-- Stock Summary Cards -->
             <div class="row mb-4 g-3">
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 rounded-3 bg-gradient h-100">
-                        <div class="card-body {{ isset($isDamaged) && $isDamaged ? 'bg-danger' : 'bg-primary' }} text-white rounded-3">
+                    <div class="card shadow-sm border-0 rounded-3 h-100">
+                        <div class="card-body bg-primary text-white rounded-3 py-3 px-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h2 class="display-5 fw-bold mb-0">{{ $filteredStocks->count() }}</h2>
-                                    <div class="text-white opacity-75 mt-2 fw-medium">Total Items</div>
+                                    <h4 class="fw-bold mb-0">{{ $filteredStocks->count() }}</h4>
+                                    <div class="text-white opacity-75 small mt-1">Total Items</div>
                                 </div>
-                                <i class="fas {{ isset($isDamaged) && $isDamaged ? 'fa-exclamation-triangle' : 'fa-boxes' }} fa-3x opacity-25"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 rounded-3 bg-gradient h-100">
-                        <div class="card-body bg-warning text-dark rounded-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h2 class="display-5 fw-bold mb-0">{{ number_format($correctTotalQty ?? $filteredStocks->sum(function($stock) { return max(0, $stock->qty); }), 0) }}</h2>
-                                    <div class="text-dark opacity-75 mt-2 fw-medium">Total Quantity</div>
+                                <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                                    <i class="fas {{ isset($isDamaged) && $isDamaged ? 'fa-exclamation-triangle' : 'fa-boxes' }} text-white"></i>
                                 </div>
-                                <i class="fas fa-cubes fa-3x opacity-25"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 rounded-3 bg-gradient h-100">
-                        <div class="card-body bg-danger text-white rounded-3">
+                    <div class="card shadow-sm border-0 rounded-3 h-100">
+                        <div class="card-body bg-warning text-dark rounded-3 py-3 px-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h2 class="display-5 fw-bold mb-0">{{ $filteredStocks->where('ed_status', 'kadaluarsa')->count() }}</h2>
-                                    <div class="text-white opacity-75 mt-2 fw-medium">Kadaluarsa</div>
+                                    <h4 class="fw-bold mb-0">{{ number_format($correctTotalQty ?? $filteredStocks->sum(function($stock) { return max(0, $stock->qty); }), 0) }}</h4>
+                                    <div class="text-dark opacity-75 small mt-1">Total Quantity</div>
                                 </div>
-                                <i class="fas fa-exclamation-triangle fa-3x opacity-25"></i>
+                                <div class="rounded-circle bg-dark bg-opacity-10 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                                    <i class="fas fa-cubes text-dark"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 rounded-3 bg-gradient h-100">
-                        <div class="card-body bg-success text-white rounded-3">
+                    <div class="card shadow-sm border-0 rounded-3 h-100">
+                        <div class="card-body bg-danger text-white rounded-3 py-3 px-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h2 class="display-5 fw-bold mb-0">{{ $filteredStocks->where('ed_status', 'lebih_dari_1_tahun')->count() }}</h2>
-                                    <div class="text-white opacity-75 mt-2 fw-medium">Stok Aman</div>
+                                    <h4 class="fw-bold mb-0">{{ $filteredStocks->where('ed_status', 'kadaluarsa')->count() }}</h4>
+                                    <div class="text-white opacity-75 small mt-1">Kadaluarsa</div>
                                 </div>
-                                <i class="fas fa-check-circle fa-3x opacity-25"></i>
+                                <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                                    <i class="fas fa-exclamation-triangle text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 rounded-3 h-100">
+                        <div class="card-body bg-success text-white rounded-3 py-3 px-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 class="fw-bold mb-0">{{ $filteredStocks->where('ed_status', 'lebih_dari_1_tahun')->count() }}</h4>
+                                    <div class="text-white opacity-75 small mt-1">Stok Aman</div>
+                                </div>
+                                <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                                    <i class="fas fa-check-circle text-white"></i>
+                                </div>
                             </div>
                         </div>
                     </div>

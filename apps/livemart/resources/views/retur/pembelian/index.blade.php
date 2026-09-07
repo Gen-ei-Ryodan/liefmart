@@ -11,11 +11,11 @@
                     <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-undo-alt me-2"></i>Daftar Retur Pembelian
                     </h5>
-                    <div class="d-flex gap-2">
-                        <a href="#" data-export="{{ route('retur-pembelian.export') }}" class="btn btn-sm btn-success rounded-pill px-3">
+                    <div>
+                        <a href="#" data-export="{{ route('retur-pembelian.export') }}" class="btn btn-sm btn-success me-2">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
-                        <a href="{{ route('retur-pembelian.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                        <a href="{{ route('retur-pembelian.create') }}" class="btn btn-sm btn-primary">
                             <i class="fas fa-plus me-1"></i> Buat Retur Baru
                         </a>
                     </div>

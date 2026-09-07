@@ -1,25 +1,24 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-4">
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="fw-bold mb-1">Data Order Belum Ada Pembayaran</h1>
-                    <p class="text-muted mb-0">Kelola dan monitor order yang belum memiliki data pembayaran</p>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Data Order Belum Ada Pembayaran
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <a href="#" data-export="{{ route('finance.unpaid-orders.export.excel', request()->query()) }}" class="btn btn-sm btn-success">
+                            <i class="fas fa-file-excel me-1"></i> Export Excel
+                        </a>
+                        <a href="#" data-export="{{ route('finance.unpaid-orders.export.pdf', request()->query()) }}" class="btn btn-sm btn-danger">
+                            <i class="fas fa-file-pdf me-1"></i> Export PDF
+                        </a>
+                    </div>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="#" data-export="{{ route('finance.unpaid-orders.export.excel', request()->query()) }}" class="btn btn-success">
-                        <i class="fas fa-file-excel me-1"></i> Export Excel
-                    </a>
-                    <a href="#" data-export="{{ route('finance.unpaid-orders.export.pdf', request()->query()) }}" class="btn btn-danger">
-                        <i class="fas fa-file-pdf me-1"></i> Export PDF
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+                <div class="card-body p-4">
 
     <!-- Summary Cards -->
     <div class="row mb-4">
@@ -347,6 +346,11 @@
                     <p class="text-muted">Semua order sudah memiliki data pembayaran atau tidak ada order yang memenuhi kriteria filter.</p>
                 </div>
             @endif
+        </div>
+    </div>
+</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

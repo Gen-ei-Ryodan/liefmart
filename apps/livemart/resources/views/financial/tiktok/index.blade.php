@@ -3,41 +3,41 @@
 @section('title', 'TikTok Financial Transactions')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
-            <h1 class="h3 mb-0 text-gray-800">Keuangan {{ $platformLabel }}</h1>
-            <p class="text-muted small mb-0">Menampilkan data transaksi keuangan {{ $platformLabel }}</p>
-        </div>
-        <div class="col-md-6 text-end">
-            <div class="btn-group shadow-sm" role="group">
-                <a href="{{ route('finance.'.$platform.'.import') }}" class="btn btn-success">
-                    <i class="fas fa-file-upload me-1"></i> Import Excel
-                </a>
-                <a href="{{ route('finance.'.$platform.'.manual') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-1"></i> Input Manual
-                </a>
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#filterModal">
-                    <i class="fas fa-filter me-1"></i> Filter
-                </button>
-                <div class="dropdown d-inline-block">
-                    <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="fas fa-download me-1"></i> Ekspor
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow">
-                        <li><a class="dropdown-item" data-export="{{ route('finance.tiktok.export.excel', request()->all()) }}"><i class="far fa-file-excel me-2"></i>Excel</a></li>
-                    </ul>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-money-bill-wave me-2"></i>Keuangan {{ $platformLabel }}
+                    </h5>
+                    <div>
+                        <a href="{{ route('finance.'.$platform.'.import') }}" class="btn btn-sm btn-success me-2">
+                            <i class="fas fa-file-upload me-1"></i> Import Excel
+                        </a>
+                        <a href="{{ route('finance.'.$platform.'.manual') }}" class="btn btn-sm btn-primary me-2">
+                            <i class="fas fa-plus me-1"></i> Input Manual
+                        </a>
+                        <button class="btn btn-sm btn-secondary me-2" data-bs-toggle="modal" data-bs-target="#filterModal">
+                            <i class="fas fa-filter me-1"></i> Filter
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-excel me-1"></i> Export Excel
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item" data-export="{{ route('finance.tiktok.export.excel', request()->all()) }}"><i class="far fa-file-excel me-2"></i>Excel</a></li>
+                            </ul>
+                        </div>
+                        <form action="{{ route('finance.tiktok.sync-order-dates') }}" method="POST" class="d-inline-block ms-2">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Apakah Anda yakin ingin menyinkronkan tanggal order untuk semua transaksi TikTok?')">
+                                <i class="fas fa-sync me-1"></i> Sync Tanggal Order
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <form action="{{ route('finance.tiktok.sync-order-dates') }}" method="POST" class="d-inline-block">
-                    @csrf
-                    <button type="submit" class="btn btn-warning" onclick="return confirm('Apakah Anda yakin ingin menyinkronkan tanggal order untuk semua transaksi TikTok?')">
-                        <i class="fas fa-sync me-1"></i> Sync Tanggal Order
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+                <div class="card-body p-4">
 
             @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -781,6 +781,10 @@
         </div>
     </div>
     @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')

@@ -5,9 +5,13 @@
     <div class="row justify-content-center">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Daftar Pesanan</span>
-                    <a href="{{ route('sales.choose-type') }}" class="btn btn-primary btn-sm">Tambah Pesanan</a>
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-shopping-cart me-2"></i>Daftar Pesanan
+                    </h5>
+                    <a href="{{ route('sales.choose-type') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i> Tambah Pesanan
+                    </a>
                 </div>
 
                 <div class="card-body">

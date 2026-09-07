@@ -11,7 +11,7 @@
                     <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-layer-group me-2"></i>Data Kategori Produk
                     </h5>
-                    <a href="{{ route('product-categories.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <a href="{{ route('product-categories.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus me-1"></i> Tambah Kategori Produk
                     </a>
                 </div>

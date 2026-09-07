@@ -1,25 +1,21 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="mb-1">Gross Profit Offline</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('analytics.sales-by-platform') }}">Analytics</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Gross Profit Offline</li>
-                </ol>
-            </nav>
-        </div>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-success" onclick="exportData()">
-                <i class="fas fa-file-excel me-2"></i> Export Excel
-            </button>
-        </div>
-    </div>
+<div class="container-fluid py-3 animate__animated animate__fadeIn animate__faster">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Gross Profit Offline
+                    </h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-success" onclick="exportData()">
+                            <i class="fas fa-file-excel me-2"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
 
     <!-- Filter Card -->
     <div class="card mb-4 shadow-sm">
@@ -103,18 +99,19 @@
     <!-- Summary Cards -->
     <div class="row g-3 mb-3">
         <div class="col-md-4">
-            <div class="card border-0 h-100">
+            <div class="card bg-primary text-white h-100 shadow-sm">
                 <div class="card-body p-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="stat-icon rounded d-flex align-items-center justify-content-center" 
-                                 style="width: 48px; height: 48px; background-color: rgba(74, 108, 247, 0.1);">
-                                <i class="fas fa-shopping-cart text-primary" style="font-size: 1.2rem;"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="text-uppercase mb-2 opacity-75" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-cart me-1"></i>Total Penjualan
+                            </h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">
+                                {{ number_format($totalSales) }}
+                            </h3>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle text-muted text-uppercase fs-xs fw-semibold mb-1">Total Penjualan</h6>
-                            <h3 class="card-title fw-bold mb-0">{{ number_format($totalSales) }}</h3>
+                        <div class="icon-circle bg-white bg-opacity-20 text-white" style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-cart" style="font-size: 1.2rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -122,18 +119,19 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card border-0 h-100">
+            <div class="card bg-success text-white h-100 shadow-sm">
                 <div class="card-body p-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="stat-icon rounded d-flex align-items-center justify-content-center" 
-                                 style="width: 48px; height: 48px; background-color: rgba(34, 197, 94, 0.1);">
-                                <i class="fas fa-dollar-sign text-success" style="font-size: 1.2rem;"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="text-uppercase mb-2 opacity-75" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-cash-coin me-1"></i>Total Revenue
+                            </h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">
+                                Rp {{ number_format($totalRevenue, 0, ',', '.') }}
+                            </h3>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle text-muted text-uppercase fs-xs fw-semibold mb-1">Total Revenue</h6>
-                            <h3 class="card-title fw-bold mb-0">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h3>
+                        <div class="icon-circle bg-white bg-opacity-20 text-white" style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-cash-coin" style="font-size: 1.2rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -141,18 +139,19 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card border-0 h-100">
+            <div class="card bg-info text-white h-100 shadow-sm">
                 <div class="card-body p-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="stat-icon rounded d-flex align-items-center justify-content-center" 
-                                 style="width: 48px; height: 48px; background-color: rgba(59, 130, 246, 0.1);">
-                                <i class="fas fa-receipt text-info" style="font-size: 1.2rem;"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="text-uppercase mb-2 opacity-75" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-receipt me-1"></i>Total Revenue -PPN
+                            </h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">
+                                Rp {{ number_format($totalRevenueWithoutPPN, 0, ',', '.') }}
+                            </h3>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle text-muted text-uppercase fs-xs fw-semibold mb-1">Total Revenue -PPN</h6>
-                            <h3 class="card-title fw-bold mb-0">Rp {{ number_format($totalRevenueWithoutPPN, 0, ',', '.') }}</h3>
+                        <div class="icon-circle bg-white bg-opacity-20 text-white" style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-receipt" style="font-size: 1.2rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -162,18 +161,19 @@
 
     <div class="row g-3 mb-4">
         <div class="col-md-6">
-            <div class="card border-0 h-100">
+            <div class="card bg-warning text-white h-100 shadow-sm">
                 <div class="card-body p-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="stat-icon rounded d-flex align-items-center justify-content-center" 
-                                 style="width: 48px; height: 48px; background-color: rgba(255, 193, 7, 0.1);">
-                                <i class="fas fa-chart-line text-warning" style="font-size: 1.2rem;"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="text-uppercase mb-2 opacity-75" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-graph-up me-1"></i>Total Profit
+                            </h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">
+                                Rp {{ number_format($totalProfit, 0, ',', '.') }}
+                            </h3>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle text-muted text-uppercase fs-xs fw-semibold mb-1">Total Profit</h6>
-                            <h3 class="card-title fw-bold mb-0">Rp {{ number_format($totalProfit, 0, ',', '.') }}</h3>
+                        <div class="icon-circle bg-white bg-opacity-20 text-white" style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-graph-up" style="font-size: 1.2rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -181,18 +181,19 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card border-0 h-100">
+            <div class="card bg-danger text-white h-100 shadow-sm">
                 <div class="card-body p-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="stat-icon rounded d-flex align-items-center justify-content-center" 
-                                 style="width: 48px; height: 48px; background-color: rgba(220, 53, 69, 0.1);">
-                                <i class="fas fa-percentage text-danger" style="font-size: 1.2rem;"></i>
-                            </div>
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h6 class="text-uppercase mb-2 opacity-75" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-percent me-1"></i>Average Margin
+                            </h6>
+                            <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">
+                                {{ number_format($averageMargin, 2) }}%
+                            </h3>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle text-muted text-uppercase fs-xs fw-semibold mb-1">Average Margin</h6>
-                            <h3 class="card-title fw-bold mb-0">{{ number_format($averageMargin, 2) }}%</h3>
+                        <div class="icon-circle bg-white bg-opacity-20 text-white" style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-percent" style="font-size: 1.2rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -283,6 +284,10 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+                </div>
             </div>
         </div>
     </div>

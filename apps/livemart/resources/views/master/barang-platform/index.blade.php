@@ -57,7 +57,7 @@
                     <h5 class="m-0 fw-bold text-primary">
                         <i class="fas fa-store me-2"></i>Master Barang Platform
                     </h5>
-                    <a href="{{ route('barang-platform.create') }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                    <a href="{{ route('barang-platform.create') }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus me-1"></i> Tambah Barang Platform
                     </a>
                 </div>
