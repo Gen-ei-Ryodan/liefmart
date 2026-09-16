@@ -3005,22 +3005,17 @@ class SalesAnalyticsController extends Controller
 
     /**
      * Export sales detail report to Excel
-     * PERBAIKAN: Export ALL data (termasuk yang fully returned) dan pastikan qty retur terisi dengan benar
+     * PERBAIKAN: Pre-compute semua data di controller, export hanya membaca nilai yang sudah dihitung
      */
     public function exportSalesDetailReport(Request $request)
     {
-        // Increase memory limit and execution time for large exports
         ini_set('memory_limit', '512M');
         set_time_limit(300);
         
-        // Parse dates
         $startDate = $request->input('start_date') ?? now()->format('Y-m-d');
         $endDate = $request->input('end_date') ?? now()->format('Y-m-d');
         $sortBy = $request->input('sort', 'date_newest');
         
-        // Build filters array for SalesDetailQuery (excludeZeroQty = true by default)
-        // Ini KUNCI: detail report HANYA menampilkan order dengan total qty > 0
-        // (exclude order yang full retur), berbeda dengan sales-export-mapped
         $filters = [
             'start_date' => $startDate,
             'end_date' => $endDate,
@@ -3032,59 +3027,132 @@ class SalesAnalyticsController extends Controller
             'sort' => $sortBy,
         ];
         
-        // Gunakan SalesDetailQuery untuk mendapatkan order IDs yang sudah difilter
-        // excludeZeroQty = true (default): HANYA order dengan remaining_qty > 0
         $orderIds = collect(DB::select(SalesDetailQuery::build($filters, 100000, 1)))->pluck('id')->toArray();
         
-        // Build the query for order items with eager loading to avoid N+1
-        // HANYA order yang lolos filter (qty total > 0 setelah retur)
-        $query = \App\Models\OrderItem::with([
+        if (empty($orderIds)) {
+            $summaryResult = DB::selectOne(SalesDetailQuery::buildSummary($filters));
+            $summary = [
+                'total_orders' => (int)($summaryResult->total_orders ?? 0),
+                'total_value' => (float)($summaryResult->total_value ?? 0),
+                'total_volume' => (float)($summaryResult->total_volume ?? 0),
+                'avg_order_value' => (float)($summaryResult->avg_order_value ?? 0),
+                'avg_order_volume' => (float)($summaryResult->avg_order_volume ?? 0),
+            ];
+            $filename = 'laporan-detail-penjualan-' . date('Y-m-d') . '.xlsx';
+            return $this->queueExcelExport(
+                new SalesDetailReportExport(collect(), $summary, $startDate, $endDate, $request->platform_id, $sortBy),
+                $filename,
+                'Export Laporan Detail Penjualan'
+            );
+        }
+        
+        $orderItems = \App\Models\OrderItem::with([
             'order.platform',
-            'order.orderItems.platformProduct', // Preload all order items for totals calculation
-            'platformProduct.mappingBarang'
+            'order.orderItems.platformProduct.mappingBarang',
+            'platformProduct.mappingBarang',
         ])->whereHas('order', function($q) use ($orderIds) {
             $q->withoutGlobalScope('mainCategory')
               ->whereIn('id', $orderIds);
-        });
-        
-        // Apply sorting based on order
-        // Use subquery to avoid DISTINCT + ORDER BY conflict
-        switch ($sortBy) {
-            case 'date_oldest':
-                $query->join('orders', 'order_items.order_id', '=', 'orders.id')
-                      ->orderBy('orders.tanggal', 'asc')
-                      ->orderBy('orders.id', 'asc')
-                      ->orderBy('order_items.id', 'asc')
-                      ->select('order_items.*');
-                break;
-            case 'value_highest':
-                $query->join('orders', 'order_items.order_id', '=', 'orders.id')
-                      ->orderBy('orders.total', 'desc')
-                      ->orderBy('orders.id', 'asc')
-                      ->orderBy('order_items.id', 'asc')
-                      ->select('order_items.*');
-                break;
-            case 'value_lowest':
-                $query->join('orders', 'order_items.order_id', '=', 'orders.id')
-                      ->orderBy('orders.total', 'asc')
-                      ->orderBy('orders.id', 'asc')
-                      ->orderBy('order_items.id', 'asc')
-                      ->select('order_items.*');
-                break;
-            case 'date_newest':
-            default:
-                $query->join('orders', 'order_items.order_id', '=', 'orders.id')
-                      ->orderBy('orders.tanggal', 'desc')
-                      ->orderBy('orders.id', 'desc')
-                      ->orderBy('order_items.id', 'desc')
-                      ->select('order_items.*');
-                break;
+        })->get();
+
+        $allOrderItemIds = $orderItems->pluck('id')->toArray();
+        $allOrderIds = $orderItems->pluck('order_id')->unique()->toArray();
+
+        $returDetails = \App\Models\ReturPenjualanDetail::whereIn('order_item_id', $allOrderItemIds)
+            ->whereHas('returPenjualan', function($q) {
+                $q->whereIn('status', ['draft', 'selesai']);
+            })
+            ->get()
+            ->groupBy('order_item_id');
+
+        $returQtyMap = [];
+        foreach ($returDetails as $itemId => $details) {
+            $returQtyMap[$itemId] = (float) $details->sum('qty');
         }
+
+        $packageQtyCache = [];
+        $returQtyByItem = [];
+        foreach ($orderItems as $item) {
+            $returQtyByItem[$item->id] = $returQtyMap[$item->id] ?? 0.0;
+            $platformProduct = $item->platformProduct;
+            if ($platformProduct && $platformProduct->relationLoaded('mappingBarang')) {
+                $mappings = $platformProduct->mappingBarang;
+                $orderCreatedAt = $item->order ? ($item->order->created_at ?? $item->created_at) : $item->created_at;
+                $validMappings = $mappings->filter(function ($mapping) use ($orderCreatedAt) {
+                    if ($mapping->valid_from) {
+                        return $mapping->valid_from <= $orderCreatedAt;
+                    }
+                    return $mapping->created_at <= $orderCreatedAt;
+                });
+                $latestVersion = $validMappings->max('version');
+                if ($latestVersion !== null) {
+                    $versionMappings = $mappings->where('version', $latestVersion);
+                    $packageQtyCache[$item->id] = $versionMappings->count() > 0 ? $versionMappings->sum('quantity') : 1;
+                } else {
+                    $activeMappings = $mappings->where('is_active', true);
+                    $packageQtyCache[$item->id] = $activeMappings->count() > 0 ? $activeMappings->sum('quantity') : 1;
+                }
+            } else {
+                $packageQtyCache[$item->id] = 1;
+            }
+        }
+
+        foreach ($orderItems as $item) {
+            $pkgQty = $packageQtyCache[$item->id] ?? 1;
+            $returIndiv = $returQtyByItem[$item->id] ?? 0.0;
+            $qtyRetur = $pkgQty > 0 ? round($returIndiv / $pkgQty, 4) : $returIndiv;
+            $currentQty = (float) ($item->quantity ?? 0);
+            $item->export_qty_retur = max(0, $qtyRetur);
+            $item->export_original_qty = $currentQty + max(0, $qtyRetur);
+        }
+
+        $orderTotals = [];
+        foreach ($orderItems->groupBy('order_id') as $orderId => $items) {
+            $qtyTotal = 0;
+            $totalInvoice = 0;
+            foreach ($items as $item) {
+                $remainingQty = max(0, $item->export_original_qty - $item->export_qty_retur);
+                $qtyTotal += $remainingQty;
+                $totalInvoice += ($item->price_after_discount * $remainingQty);
+            }
+            $orderTotals[$orderId] = [
+                'qty_total' => round($qtyTotal, 0),
+                'total_invoice' => round($totalInvoice, 2),
+            ];
+        }
+
+        $orderItems->each(function ($item) use ($orderTotals) {
+            $totals = $orderTotals[$item->order_id] ?? ['qty_total' => 0, 'total_invoice' => 0];
+            $item->export_qty_total = $totals['qty_total'];
+            $item->export_total_invoice = $totals['total_invoice'];
+        });
+
+        $sorted = match ($sortBy) {
+            'date_oldest' => $orderItems->sortBy(fn($item) => [
+                $item->order ? $item->order->tanggal : '',
+                $item->order ? $item->order->id : 0,
+                $item->id,
+            ]),
+            'value_highest' => $orderItems->sortByDesc(fn($item) => [
+                $item->order ? $item->order->total : 0,
+                $item->order ? $item->order->id : 0,
+                $item->id,
+            ]),
+            'value_lowest' => $orderItems->sortBy(fn($item) => [
+                $item->order ? $item->order->total : 0,
+                $item->order ? $item->order->id : 0,
+                $item->id,
+            ]),
+            default => $orderItems->sortByDesc(fn($item) => [
+                $item->order ? $item->order->tanggal : '',
+                $item->order ? $item->order->id : 0,
+                $item->id,
+            ]),
+        };
+
+        $sorted = $sorted->values();
         
-        // Calculate summary menggunakan SalesDetailQuery (konsisten dengan view)
-        // excludeZeroQty = true: HANYA order dengan remaining_qty > 0
         $summaryResult = DB::selectOne(SalesDetailQuery::buildSummary($filters));
-        
         $summary = [
             'total_orders' => (int)($summaryResult->total_orders ?? 0),
             'total_value' => (float)($summaryResult->total_value ?? 0),
@@ -3095,12 +3163,10 @@ class SalesAnalyticsController extends Controller
         
         $filename = 'laporan-detail-penjualan-' . date('Y-m-d') . '.xlsx';
         
-        // Pass query instead of collection to use chunking
         return $this->queueExcelExport(
-            new SalesDetailReportExport($query, $summary, $startDate, $endDate, $request->platform_id),
+            new SalesDetailReportExport($sorted, $summary, $startDate, $endDate, $request->platform_id, $sortBy),
             $filename,
-            'Export Laporan Detail Penjualan',
-            true
+            'Export Laporan Detail Penjualan'
         );
     }
 

@@ -465,8 +465,8 @@
     }
 
     .table-dark th {
-        background-color: var(--dark-color) !important;
-        color: white !important;
+        background-color: #1e293b !important;
+        color: #ffffff !important;
         font-weight: 500;
     }
 
