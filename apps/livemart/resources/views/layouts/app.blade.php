@@ -300,6 +300,15 @@
         
         .card:hover {
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+        }
+
+        /*
+         * Angkat kartu saat hover, KECUALI kartu yang berisi modal.
+         * Transform pada ancestor menjadikan kartu sebagai containing block untuk
+         * elemen position:fixed (modal). Akibatnya modal filter posisinya relatif ke
+         * kartu (tergeser/terpotong) lalu melompat balik saat hover hilang => kedip.
+         */
+        .card:not(:has(.modal)):hover {
             transform: translateY(-2px);
         }
         

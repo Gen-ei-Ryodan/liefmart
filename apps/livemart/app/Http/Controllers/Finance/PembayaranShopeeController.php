@@ -7,6 +7,7 @@ use App\Traits\QueueExport;
 use App\Models\ShopeeFinancialTransaction;
 use App\Models\Order;
 use App\Models\Platform;
+use App\Models\ReturPenjualan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +18,6 @@ use App\Exports\ShopeeFinanceAnalyticsExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\AdjustmentHistory;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class PembayaranShopeeController extends Controller
 {
@@ -42,12 +42,9 @@ class PembayaranShopeeController extends Controller
         $platform = 'shopee';
         $platformLabel = 'Shopee Lamourad';
         
-        // Optimized eager loading - only load what's needed for display
-        $query = ShopeeFinancialTransaction::with([
-            'order.orderItems.platformProduct.mappingBarang',
-            'order.orderItems.warehouseStock.tax',
-            'order.mainCategory'
-        ]);
+        // Query transaksi tanpa eager load dulu: relasi hanya dimuat untuk
+        // 15 baris halaman aktif (lihat paginate() di bawah)
+        $query = ShopeeFinancialTransaction::query();
         
         // Filter by payment date range
         if ($request->filled('from_date')) {
@@ -112,34 +109,72 @@ class PembayaranShopeeController extends Controller
             }
         }
         
-        // Get all transactions matching the query (without pagination yet)
-        $allTransactions = $query->orderBy('tanggal_order', 'desc')->get();
+        // ==== Filter order full retur (semua item kembali) di level DB ====
+        // Kandidat hanya (a) order yang lolos filter transaksi saat ini DAN
+        // (b) punya retur draft/selesai — order lain pasti belum full retur
+        // sehingga tidak perlu dievaluasi. (Sebelumnya semua order difilter
+        // satu per satu di PHP pada setiap request.)
+        $fullyReturnedOrderIds = [];
 
-        // Filter out fully returned orders (retur full), keep partial returns (retur sebagian)
-        // Uses Order::isFullyReturned() for consistent logic across all platforms
-        $filteredCollection = $allTransactions->filter(function($transaction) {
-            if ($transaction->order && $transaction->order->isFullyReturned()) {
-                return false;
+        $filteredOrderIds = $query->clone()
+            ->whereNotNull('order_id')
+            ->distinct()
+            ->pluck('order_id');
+
+        $returOrderIds = ReturPenjualan::whereIn('status', ['draft', 'selesai'])
+            ->distinct()
+            ->pluck('order_id')
+            ->intersect($filteredOrderIds);
+
+        if ($returOrderIds->isNotEmpty()) {
+            $returOrders = Order::with('orderItems.platformProduct.mappingBarang')
+                ->whereIn('id', $returOrderIds)
+                ->get();
+
+            // Hitung total qty retur semua item sekaligus (1 query per chunk),
+            // supaya isFullyReturned() tidak query per item (N+1)
+            Order::primeReturQty($returOrders->flatMap(function ($order) {
+                return $order->orderItems->pluck('id');
+            })->all());
+
+            foreach ($returOrders as $order) {
+                if ($order->isFullyReturned()) {
+                    $fullyReturnedOrderIds[] = $order->id;
+                }
             }
-            return true;
-        });
+        }
 
-        // Calculate totals for cards from FILTERED data (after fully-returned filter)
-        $totalCount = $filteredCollection->count();
-        $totalNominalFix = $filteredCollection->sum('nominal_fix');
-        $totalSaldoMasuk = $filteredCollection->sum('saldo_masuk');
-        $totalOutstanding = $filteredCollection->sum('outstanding');
+        $applyFullReturnFilter = function ($q) use ($fullyReturnedOrderIds) {
+            if (!empty($fullyReturnedOrderIds)) {
+                $q->whereNotIn('order_id', $fullyReturnedOrderIds);
+            }
+        };
 
-        // Paginate the filtered results for display
+        // Total kartu dihitung langsung oleh SQL (COUNT + SUM)
+        $totals = $query->clone()->tap($applyFullReturnFilter)->selectRaw(
+            'COUNT(*) as total_count, ' .
+            'COALESCE(SUM(nominal_fix), 0) as total_nominal_fix, ' .
+            'COALESCE(SUM(saldo_masuk), 0) as total_saldo_masuk, ' .
+            'COALESCE(SUM(outstanding), 0) as total_outstanding'
+        )->first();
+
+        $totalCount = (int) ($totals->total_count ?? 0);
+        $totalNominalFix = (float) ($totals->total_nominal_fix ?? 0);
+        $totalSaldoMasuk = (float) ($totals->total_saldo_masuk ?? 0);
+        $totalOutstanding = (float) ($totals->total_outstanding ?? 0);
+
+        // Pagination di level database: hanya baris halaman aktif yang dimuat
+        // lengkap dengan relasinya
         $perPage = 15;
         $currentPage = Paginator::resolveCurrentPage('page');
-        $transactions = new LengthAwarePaginator(
-            $filteredCollection->forPage($currentPage, $perPage)->values(),
-            $filteredCollection->count(),
-            $perPage,
-            $currentPage,
-            ['path' => Paginator::resolveCurrentPath()]
-        );
+        $transactions = $query->clone()->tap($applyFullReturnFilter)
+            ->with([
+                'order.orderItems.platformProduct.mappingBarang',
+                'order.orderItems.warehouseStock.tax',
+                'order.mainCategory',
+            ])
+            ->orderBy('tanggal_order', 'desc')
+            ->paginate($perPage, ['*'], 'page', $currentPage);
         
         // Get all orders that don't have financial transactions
         $missingOrdersQuery = Order::with(['orderItems', 'orderItems.platformProduct.mappingBarang'])
@@ -153,15 +188,29 @@ class PembayaranShopeeController extends Controller
 
         $missingOrders = $missingOrdersQuery
             ->orderBy('tanggal', 'desc') // Use tanggal instead of order_date
-            ->get()
-            ->filter(function($order) {
-                // Filter out fully returned orders
-                return !$order->isFullyReturned();
-            });
+            ->get();
+
+        // Prime total qty retur order item yang belum bayar juga, agar
+        // filter isFullyReturned() di bawah tanpa query per item (N+1)
+        Order::primeReturQty($missingOrders->flatMap(function ($order) {
+            return $order->orderItems->pluck('id');
+        })->all());
+
+        $missingOrders = $missingOrders->filter(function($order) {
+            // Filter out fully returned orders
+            return !$order->isFullyReturned();
+        });
             
         // Group transactions by order number for display
         $groupedTransactions = $transactions->getCollection()->groupBy('no_order');
         
+        // Prime hasReturns() untuk baris yang ditampilkan view, agar view tidak
+        // menjalankan query exists per baris (baris halaman + daftar unpaid)
+        Order::primeHasReturns(array_merge(
+            $transactions->getCollection()->pluck('order')->filter()->pluck('id')->all(),
+            $missingOrders->pluck('id')->all()
+        ));
+
         return view('financial.shopee.index', compact(
             'transactions', 
             'groupedTransactions', 
