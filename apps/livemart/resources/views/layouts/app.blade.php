@@ -1010,6 +1010,51 @@
     <!-- Import Form Handler -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+
+        // Polling status job import sampai selesai (completed / failed).
+        // Interval 2 detik, maksimal ±5 menit supaya tidak polling selamanya
+        // jika worker queue sedang tidak jalan.
+        function pollImportJob(toast, jobId, redirectUrl, pendingMessage) {
+            var attempts = 0;
+            var maxAttempts = 150;
+
+            toast.style.borderLeftColor = '#6366F1';
+            toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;border:3px solid #e5e7eb;border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div><strong>Import masuk antrian...</strong><br><span style="color:#6B7280;font-size:12px;">' + (pendingMessage || 'Sedang diproses di background. Halaman ini akan berpindah otomatis saat selesai.') + '</span></div>';
+
+            var poll = setInterval(function() {
+                attempts++;
+
+                if (attempts > maxAttempts) {
+                    clearInterval(poll);
+                    showError(toast, 'Import belum selesai dalam 5 menit. Kemungkinan worker queue tidak berjalan - coba lagi nanti atau hubungi admin.');
+                    return;
+                }
+
+                fetch('/export-jobs/' + jobId + '/status', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(s) {
+                    if (s.status === 'completed') {
+                        clearInterval(poll);
+
+                        var result = s.result || {};
+                        var detail = 'Berhasil: ' + (result.success || 0) + ' order';
+                        if (result.duplicates) detail += ', duplikat: ' + result.duplicates;
+                        if (result.skipped) detail += ', dilewati: ' + result.skipped;
+
+                        toast.style.borderLeftColor = '#10B981';
+                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Import selesai!</strong><br><span style="color:#6B7280;font-size:12px;">' + detail + '</span></div>';
+                        setTimeout(function() { toast.remove(); window.location.href = redirectUrl; }, 3000);
+                    } else if (s.status === 'failed') {
+                        clearInterval(poll);
+                        showError(toast, s.error || 'Import gagal - tidak ada data yang tersimpan.');
+                    }
+                })
+                .catch(function() { /* biarkan, coba lagi di interval berikutnya */ });
+            }, 2000);
+        }
+
         document.querySelectorAll('form[action*="process-import"]').forEach(function(form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -1035,13 +1080,22 @@
                     throw new Error('Unexpected response');
                 })
                 .then(function(data) {
-                    if (data.success) {
-                        toast.style.borderLeftColor = '#10B981';
-                        toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Import diproses!</strong><br><span style="color:#6B7280;font-size:12px;">' + (data.message || 'Anda akan dialihkan...') + '</span></div>';
-                        setTimeout(function() { toast.remove(); window.location.href = data.redirect || '/sales/list'; }, 3000);
-                    } else {
+                    if (!data.success) {
                         showError(toast, data.message || 'Import gagal');
+                        return;
                     }
+
+                    // Polling status import di background (sama seperti export),
+                    // supaya user tahu hasil akhirnya: sukses atau gagal.
+                    if (data.job_id) {
+                        pollImportJob(toast, data.job_id, data.redirect || '/sales/list', data.message);
+                        return;
+                    }
+
+                    // Fallback tanpa job_id (proses sinkron)
+                    toast.style.borderLeftColor = '#10B981';
+                    toast.innerHTML = '<div style="width:20px;min-width:20px;height:20px;background:#10B981;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong style="color:#10B981;">Import diproses!</strong><br><span style="color:#6B7280;font-size:12px;">' + (data.message || 'Anda akan dialihkan...') + '</span></div>';
+                    setTimeout(function() { toast.remove(); window.location.href = data.redirect || '/sales/list'; }, 3000);
                 })
                 .catch(function(err) {
                     showError(toast, err.message || 'Terjadi kesalahan');

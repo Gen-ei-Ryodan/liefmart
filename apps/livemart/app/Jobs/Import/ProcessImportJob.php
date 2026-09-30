@@ -67,17 +67,50 @@ class ProcessImportJob implements ShouldQueue
 
             \App\Models\WarehouseStock::$consolidateOrderItemsByProduct = false;
 
+            $errors = $result['errors'] ?? [];
+
+            // Jika ada error, processImport sudah melakukan ROLLBACK (tidak ada data
+            // yang tersimpan). Ini BUKAN sukses — tandai failed supaya UI tidak
+            // menampilkan status completed untuk import yang sebenarnya gagal.
+            if (!empty($errors)) {
+                $errorMessage = 'Import dibatalkan, tidak ada data yang tersimpan (rollback). '
+                    . $this->formatErrors($errors);
+                Log::error('ProcessImportJob: ' . $errorMessage);
+                $exportJob->markFailed($errorMessage);
+                return;
+            }
+
             $exportJob->markCompleted([
                 'success' => $result['success'] ?? 0,
                 'duplicates' => $result['duplicates'] ?? 0,
                 'skipped' => $result['skipped'] ?? 0,
-                'errors' => $result['errors'] ?? [],
+                'errors' => [],
             ]);
         } catch (\Exception $e) {
             \App\Models\WarehouseStock::$consolidateOrderItemsByProduct = false;
             Log::error('ProcessImportJob failed: ' . $e->getMessage());
             $exportJob->markFailed($e->getMessage());
         }
+    }
+
+    /**
+     * Gabungkan error dari processImport menjadi satu pesan yang mudah dibaca.
+     *
+     * format error bisa berupa list string, atau ['invalidData' => [...]]
+     */
+    protected function formatErrors(array $errors): string
+    {
+        $messages = [];
+
+        foreach ($errors as $key => $value) {
+            if (is_array($value)) {
+                $messages[] = $key . ': ' . implode(', ', array_map('strval', array_values($value)));
+            } else {
+                $messages[] = (string) $value;
+            }
+        }
+
+        return implode(' | ', $messages);
     }
 
     public function failed(\Throwable $exception)

@@ -243,11 +243,13 @@ class Shopee2Controller extends Controller
                     $platformProductId = $row['platform_product_id'] ?? null;
                     
                     if (!$platformProductId) {
-                        // Cari platform product berdasarkan nama dan variasi
-                        $platformProduct = \App\Models\PlatformProduct::where('platform_id', $this->platform->id)
-                            ->where('platform_product_name', $row['nama_barang'] ?? '')
-                            ->where('variant', $row['variasi'] ?? '')
-                            ->first();
+                        // Cari platform product dengan resolver yang SAMA dengan processImport,
+                        // supaya hitungan stok di preview identik dengan pengurangan stok saat import
+                        $platformProduct = \App\Models\PlatformProduct::resolveForPlatform(
+                            $this->platform->id,
+                            $row['nama_barang'] ?? '',
+                            $row['variasi'] ?? null
+                        );
                         
                         if ($platformProduct) {
                             $platformProductId = $platformProduct->id;

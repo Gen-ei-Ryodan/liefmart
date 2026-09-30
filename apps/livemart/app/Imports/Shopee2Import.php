@@ -189,11 +189,15 @@ class Shopee2Import implements ToCollection, WithMultipleSheets
                 $this->checkProductMapping($processedRow['nama_barang'], $processedRow['variasi'] ?? null);
 
                 // Cari platform product ID untuk validasi stok di preview
-                $platformProduct = PlatformProduct::where('platform_id', $this->platform->id)
-                    ->where('platform_product_name', $processedRow['nama_barang'])
-                    ->where('variant', $processedRow['variasi'] ?? '')
-                    ->first();
-                
+                // Pakai resolver yang sama dengan processImport, supaya baris yang
+                // tidak exact match (misal variant Excel kosong vs '-' di database)
+                // tetap dihitung saat validasi stok preview.
+                $platformProduct = PlatformProduct::resolveForPlatform(
+                    $this->platform->id,
+                    $processedRow['nama_barang'],
+                    $processedRow['variasi'] ?? null
+                );
+
                 if ($platformProduct) {
                     $processedRow['platform_product_id'] = $platformProduct->id;
                 }
@@ -974,46 +978,22 @@ class Shopee2Import implements ToCollection, WithMultipleSheets
                         
                         \Log::info("Processing item: $fullProductName, qty: {$item['qty']}");
                         
-                        // Ambil platform_product dengan pencarian yang lebih fleksibel
-                        $platformProduct = PlatformProduct::where('platform_id', $this->platform->id)
-                            ->where(function ($query) use ($productName, $variation, $fullProductName) {
-                                if (!empty($variation)) {
-                                    // Jika ada variant, cari dengan nama produk dan variant yang tepat
-                                    $query->where('platform_product_name', $productName)
-                                        ->where('variant', $variation);
-                                } else {
-                                    // Jika tidak ada variant, cari dengan nama produk saja dan variant null/kosong
-                                    $query->where('platform_product_name', $productName)
-                                        ->where(function($q) {
-                                            $q->whereNull('variant')
-                                              ->orWhere('variant', '');
-                                        });
-                                }
-                            })
-                            ->first();
+                        // Ambil platform_product dengan logika yang sama seperti
+                        // di preview (PlatformProduct::resolveForPlatform):
+                        // exact match nama+variant, lalu pencarian fleksibel jika tanpa variant
+                        $platformProduct = PlatformProduct::resolveForPlatform(
+                            $this->platform->id,
+                            $productName,
+                            $variation
+                        );
 
-                        // Jika tidak ditemukan dengan pencarian exact, coba dengan pencarian yang lebih fleksibel
-                        // TETAPI hanya jika tidak ada variant yang spesifik
                         if (!$platformProduct) {
                             if (!empty($variation)) {
                                 // Jika ada variant spesifik, jangan gunakan flexible search
                                 // Biarkan platformProduct tetap null agar bisa ditangani sebagai unmapped product
                                 \Log::warning("Exact match not found for product: $productName, variant: $variation. Skipping flexible search for variant-specific products.");
                             } else {
-                                // Hanya gunakan flexible search jika tidak ada variant
-                                \Log::warning("Exact match not found for product: $productName (no variant), trying flexible search");
-                                
-                                $platformProduct = PlatformProduct::where('platform_id', $this->platform->id)
-                                    ->where(function ($query) use ($productName, $fullProductName) {
-                                        // Coba cari dengan nama lengkap
-                                        $query->where('platform_product_name', $fullProductName)
-                                            ->orWhere('platform_product_name', 'LIKE', '%'.$fullProductName.'%')
-                                            // Juga coba cari dengan nama produk saja
-                                            ->orWhere('platform_product_name', $productName)
-                                            ->orWhere('platform_product_name', 'LIKE', '%'.$productName.'%')
-                                            ->orWhere(DB::raw('LOWER(platform_product_name)'), 'LIKE', '%'.strtolower($productName).'%');
-                                    })
-                                    ->first();
+                                \Log::warning("Exact match not found for product: $productName (no variant), flexible search also found nothing");
                             }
                         }
 

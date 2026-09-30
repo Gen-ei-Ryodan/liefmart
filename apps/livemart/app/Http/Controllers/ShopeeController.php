@@ -250,11 +250,15 @@ class ShopeeController extends Controller
                     $platformProductId = $row['platform_product_id'] ?? null;
                     
                     if (!$platformProductId) {
-                        // Cari platform product berdasarkan nama dan variasi
-                        $platformProduct = \App\Models\PlatformProduct::where('platform_id', $this->platform->id)
-                            ->where('platform_product_name', $row['nama_barang'] ?? '')
-                            ->where('variant', $row['variasi'] ?? '')
-                            ->first();
+                        // Cari platform product dengan resolver yang SAMA dengan processImport.
+                        // Sebelumnya hanya exact match nama+variant, sehingga baris dengan
+                        // variant kosong (di Excel) vs '-' (di database) tidak dihitung sama
+                        // sekali di preview, padahal tetap dikurangi stoknya saat import.
+                        $platformProduct = \App\Models\PlatformProduct::resolveForPlatform(
+                            $this->platform->id,
+                            $row['nama_barang'] ?? '',
+                            $row['variasi'] ?? null
+                        );
                         
                         if ($platformProduct) {
                             $platformProductId = $platformProduct->id;
