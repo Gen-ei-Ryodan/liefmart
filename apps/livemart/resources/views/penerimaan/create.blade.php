@@ -218,93 +218,38 @@
                                 </div>
                             </div>
                             
-                            <!-- Discount System - 5 Levels -->
-                            <div class="p-3 mb-3 rounded-3 border border-1" style="background-color: rgba(65, 95, 255, 0.03);">
-                                <div class="mb-2">
-                                    <h6 class="mb-0"><i class="fas fa-tags me-2 text-primary"></i> Sistem Diskon (5 Level)</h6>
-                                    <p class="text-muted small mb-0">Isi hanya satu jenis diskon (% atau Rp) per level</p>
+                            <!-- Discount System - 5 Levels (Refined & Clean) -->
+                            <div class="p-3 mb-3 rounded-3 border" style="background-color: #f8faff; border-color: #e2e8f0 !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <h6 class="mb-0 fw-semibold text-dark"><i class="fas fa-tags me-2 text-primary"></i> Sistem Diskon (5 Level Bertingkat)</h6>
+                                        <p class="text-muted small mb-0">Isi salah satu jenis diskon (% atau Rp) per level</p>
+                                    </div>
+                                    <span class="badge bg-light text-muted border px-2 py-1 small">Opsional</span>
                                 </div>
                                 
                                 <div class="row g-2">
-                                    <!-- Discount Level 1 -->
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Diskon 1 (%)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control text-center discount-input" id="diskon_persen_1" min="0" max="100" step="0.01" placeholder="0">
-                                            <span class="input-group-text bg-light">%</span>
+                                    @for ($i = 1; $i <= 5; $i++)
+                                        <div class="col-xl col-md-4 col-sm-6 col-12">
+                                            <div class="p-2 rounded-2 bg-white border h-100 shadow-2xs">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="badge bg-light text-primary fw-bold" style="font-size: 0.75rem;">Level {{ $i }}</span>
+                                                </div>
+                                                <div class="mb-1">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-light border-end-0 py-1 px-2 text-muted small" style="font-size: 0.75rem;">%</span>
+                                                        <input type="number" class="form-control form-control-sm text-center discount-input" id="diskon_persen_{{ $i }}" min="0" max="100" step="0.01" placeholder="0">
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text bg-light border-end-0 py-1 px-2 text-muted small" style="font-size: 0.75rem;">Rp</span>
+                                                        <input type="number" class="form-control form-control-sm discount-input" id="diskon_nominal_{{ $i }}" min="0" placeholder="0">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Nominal 1</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light">Rp</span>
-                                            <input type="number" class="form-control discount-input" id="diskon_nominal_1" min="0" placeholder="0">
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Discount Level 2 -->
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Diskon 2 (%)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control text-center discount-input" id="diskon_persen_2" min="0" max="100" step="0.01" placeholder="0">
-                                            <span class="input-group-text bg-light">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Nominal 2</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light">Rp</span>
-                                            <input type="number" class="form-control discount-input" id="diskon_nominal_2" min="0" placeholder="0">
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Discount Level 3 -->
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Diskon 3 (%)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control text-center discount-input" id="diskon_persen_3" min="0" max="100" step="0.01" placeholder="0">
-                                            <span class="input-group-text bg-light">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Nominal 3</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light">Rp</span>
-                                            <input type="number" class="form-control discount-input" id="diskon_nominal_3" min="0" placeholder="0">
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Discount Level 4 -->
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Diskon 4 (%)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control text-center discount-input" id="diskon_persen_4" min="0" max="100" step="0.01" placeholder="0">
-                                            <span class="input-group-text bg-light">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Nominal 4</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light">Rp</span>
-                                            <input type="number" class="form-control discount-input" id="diskon_nominal_4" min="0" placeholder="0">
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Discount Level 5 -->
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Diskon 5 (%)</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="number" class="form-control text-center discount-input" id="diskon_persen_5" min="0" max="100" step="0.01" placeholder="0">
-                                            <span class="input-group-text bg-light">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 col-sm-4 col-6">
-                                        <label class="form-label small fw-medium">Nominal 5</label>
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light">Rp</span>
-                                            <input type="number" class="form-control discount-input" id="diskon_nominal_5" min="0" placeholder="0">
-                                        </div>
-                                    </div>
+                                    @endfor
                                 </div>
                             </div>
                             
@@ -1418,9 +1363,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let discountBadgesHTML = '';
             for (let i = 0; i < 5; i++) {
                 if (diskonPersenValues[i] > 0) {
-                    discountBadgesHTML += `<span class="badge bg-info text-dark rounded-pill me-1">D${i+1}: ${diskonPersenValues[i]}%</span>`;
+                    discountBadgesHTML += `<span class="badge rounded-pill me-1 text-primary border" style="background-color: #eff6ff; border-color: #bfdbfe !important; font-weight: 500;">D${i+1}: ${diskonPersenValues[i]}%</span>`;
                 } else if (diskonNominalValues[i] > 0) {
-                    discountBadgesHTML += `<span class="badge bg-info text-dark rounded-pill me-1">D${i+1}: Rp ${formatRupiah(diskonNominalValues[i])}</span>`;
+                    discountBadgesHTML += `<span class="badge rounded-pill me-1 text-primary border" style="background-color: #eff6ff; border-color: #bfdbfe !important; font-weight: 500;">D${i+1}: Rp ${formatRupiah(diskonNominalValues[i])}</span>`;
                 }
             }
             
