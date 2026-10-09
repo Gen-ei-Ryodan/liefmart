@@ -61,9 +61,9 @@ class SalesOfflineTest extends TestCase
         $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->seed(\Database\Seeders\SuperadminRoleSeeder::class);
 
-        $this->skincare = MainCategory::where('name', 'SKINCARE')->first();
-        $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first();
-        $this->gudangA = Lokasi::where('kode', 'GUDANG_A')->first() ?? Lokasi::factory()->create(['kode' => 'GUDANG_A']);
+        $this->skincare = MainCategory::where('is_active', true)->where('name', '!=', 'Kopi')->first() ?? MainCategory::first();
+        $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first() ?? TaxCategory::first();
+        $this->gudangA = Lokasi::where('kode', 'GUDANG_A')->first() ?? Lokasi::first();
         $this->satuan = Satuan::where('is_active', true)->first();
 
         $this->product1 = Product::factory()->create([
@@ -85,6 +85,8 @@ class SalesOfflineTest extends TestCase
         $this->customer = Customer::create([
             'name' => 'Budi Santoso',
             'phone' => '08123456789',
+            'email' => 'budi@example.com',
+            'pic_name' => 'Budi',
             'status' => 'active',
         ]);
 
@@ -374,6 +376,7 @@ class SalesOfflineTest extends TestCase
         OfflineSaleItem::create([
             'offline_sale_id' => $sale->id,
             'product_id' => $this->product1->id,
+            'warehouse_stock_id' => $this->stock1->id,
             'quantity' => 2,
             'unit_price' => 100000,
             'subtotal' => 200000,
@@ -522,6 +525,7 @@ class SalesOfflineTest extends TestCase
             'sale_date' => now()->format('Y-m-d'),
             'customer_id' => $this->customer->id,
             'subtotal' => 500000,
+            'tax_amount' => 0,
             'total_amount' => 500000,
             'status' => 'pending',
             'product_id' => [$this->product1->id],
@@ -535,6 +539,7 @@ class SalesOfflineTest extends TestCase
             'sale_date' => now()->format('Y-m-d'),
             'customer_id' => $this->customer->id,
             'subtotal' => 1000000,
+            'tax_amount' => 0,
             'total_amount' => 1000000,
             'status' => 'pending',
             'product_id' => [$this->product1->id],
@@ -552,15 +557,17 @@ class SalesOfflineTest extends TestCase
         $response = $this->get(route('sales.product-stock-info', $this->product1->id));
         $response->assertStatus(200);
         $response->assertJsonStructure([
-            'product_id', 'product_name', 'total_stock', 'warehouse_stocks',
+            'product_id', 'product_name', 'sku', 'total_stock', 'warehouse_stocks',
         ]);
     }
 
     /** @test */
     public function generate_sj_number_endpoint()
     {
-        $response = $this->get(route('sales.offline.generate-sj-number', [
+        $response = $this->post(route('sales.offline.generate-sj-number', [
             'main_category_id' => $this->skincare->id,
+            'tax_id' => $this->taxCategory->id,
+            'order_date' => now()->format('Y-m-d'),
         ]));
 
         $response->assertStatus(200);

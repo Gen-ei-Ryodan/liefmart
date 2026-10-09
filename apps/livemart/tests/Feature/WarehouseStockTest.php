@@ -58,9 +58,9 @@ class WarehouseStockTest extends TestCase
         $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->seed(\Database\Seeders\SuperadminRoleSeeder::class);
 
-        $this->skincare = MainCategory::where('name', 'SKINCARE')->first();
-        $this->taxPkp = TaxCategory::where('name', 'SKINCARE-PKP')->first() ?? TaxCategory::first();
-        $this->taxNonPkp = TaxCategory::where('name', 'SKINCARE-NONPKP')->first();
+        $this->skincare = MainCategory::where('is_active', true)->where('name', '!=', 'Kopi')->first() ?? MainCategory::first();
+        $this->taxPkp = TaxCategory::where('main_category_id', $this->skincare->id)->where('name', 'like', '%PKP%')->where('name', 'not like', '%NON%')->first() ?? TaxCategory::first();
+        $this->taxNonPkp = TaxCategory::where('main_category_id', $this->skincare->id)->where('name', 'like', '%NON%')->first() ?? TaxCategory::skip(1)->first() ?? $this->taxPkp;
         $this->gudangA = Lokasi::where('kode', 'GUDANG_A')->first() ?? Lokasi::factory()->create(['kode' => 'GUDANG_A', 'nama' => 'Gudang A']);
         $this->satuan = Satuan::where('is_active', true)->first();
 

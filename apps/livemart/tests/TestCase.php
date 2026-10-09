@@ -24,7 +24,9 @@ abstract class TestCase extends BaseTestCase
      */
     protected function setMainCategorySkincare(): void
     {
-        $mainCategory = \App\Models\MainCategory::where('is_active', true)->first();
+        $mainCategory = \App\Models\MainCategory::where('name', 'Kosmetik')->orWhere('name', 'SKINCARE')->first() 
+            ?? \App\Models\MainCategory::where('name', '!=', 'Kopi')->first()
+            ?? \App\Models\MainCategory::where('is_active', true)->first();
         if ($mainCategory) {
             session(['main_category_id' => $mainCategory->id]);
             session(['main_category_name' => $mainCategory->name]);

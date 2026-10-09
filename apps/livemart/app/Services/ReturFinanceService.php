@@ -556,18 +556,8 @@ class ReturFinanceService
                     ? $firstItem->warehouseStock->tax_id 
                     : null;
                 
-                // Calculate grand total from NET DPP (NET DPP + PPN)
-                $grandTotal = $netDPP;
-                
-                if ($taxId == 3) {
-                    // PKP: Calculate PPN from NET DPP
-                    $netDPP11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($netDPP);
-                    $netPPN = \App\Helpers\NumberFormatter::calculatePPN($netDPP11_12);
-                    $grandTotal = \App\Helpers\NumberFormatter::calculateGrandTotal($netDPP, $netPPN);
-                } else {
-                    // Non-PKP: Just round NET DPP
-                    $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($netDPP);
-                }
+                // Nominal offline sudah include PPN, grand total adalah sisa bersih setelah retur
+                $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($netDPP);
                 
                 // Update invoice with grand total (NET DPP + PPN)
                 // Set status as 'partial_refund' to indicate nominal already includes PPN

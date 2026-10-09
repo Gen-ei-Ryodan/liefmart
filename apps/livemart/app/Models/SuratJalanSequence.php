@@ -75,6 +75,12 @@ class SuratJalanSequence extends Model
             $orderDate = Carbon::now()->format('Y-m-d');
         }
         
+        if (!$taxId) {
+            $defaultTax = \App\Models\TaxCategory::withoutGlobalScopes()->where('is_active', true)->first() 
+                ?? \App\Models\TaxCategory::withoutGlobalScopes()->first();
+            $taxId = $defaultTax ? $defaultTax->id : 1;
+        }
+
         // Format tahun-bulan berdasarkan tanggal ORDER (YYMM)
         $yearMonth = Carbon::parse($orderDate)->format('ym');
         $taxCode = self::resolveTaxCode($taxId);

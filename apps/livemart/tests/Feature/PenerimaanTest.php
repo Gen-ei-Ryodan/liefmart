@@ -56,8 +56,8 @@ class PenerimaanTest extends TestCase
         $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->seed(\Database\Seeders\SuperadminRoleSeeder::class);
 
-        $this->skincare = MainCategory::where('name', 'SKINCARE')->first();
-        $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first();
+        $this->skincare = MainCategory::where('is_active', true)->where('name', '!=', 'Kopi')->first() ?? MainCategory::first();
+        $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first() ?? TaxCategory::first();
         $this->lokasi = Lokasi::first();
         $this->satuan = Satuan::where('is_active', true)->first();
 
@@ -425,6 +425,10 @@ class PenerimaanTest extends TestCase
             'metode_pembayaran' => 'Cash',
             'main_category_id' => $this->skincare->id,
             'tax_category_id' => $this->taxCategory->id,
+            'barang_id' => [$this->product1->id],
+            'qty' => [10],
+            'satuan_id' => [$this->satuan->id],
+            'harga_hpp' => [15000],
         ]);
 
         $response->assertRedirect(route('penerimaan.index'));

@@ -195,6 +195,7 @@ Route::prefix('sales')->middleware(['auth', 'main.category', 'prevent-back-histo
         Route::get('/{offlineSale}/print/sj', [SalesController::class, 'offlineSalePrintSJ'])->name('sales.offline.print.sj')->middleware('permission:sales.view');
         Route::delete('/{offlineSale}', [SalesController::class, 'offlineSaleDestroy'])->name('sales.offline.destroy')->middleware('permission:sales.delete');
         Route::post('/generate-sj-number', [SalesController::class, 'generateSJNumber'])->name('sales.offline.generate-sj-number')->middleware('permission:sales.create');
+        Route::get('/product-stock-info/{productId}', [SalesController::class, 'getProductStockInfo'])->name('sales.product-stock-info')->middleware('permission:sales.view');
     });
 
     // Penjualan Online

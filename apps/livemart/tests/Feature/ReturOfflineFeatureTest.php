@@ -62,7 +62,7 @@ class ReturOfflineFeatureTest extends TestCase
         $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first();
         $this->lokasi = Lokasi::first();
         $this->product = Product::factory()->create(['name' => 'Offline Retur Product', 'main_category_id' => $this->skincare->id]);
-        $this->customer = Customer::create(['name' => 'Retur Customer', 'phone' => '08123', 'status' => 'active']);
+        $this->customer = Customer::create(['name' => 'Retur Customer', 'phone' => '08123', 'email' => 'retur@test.com', 'pic_name' => 'Retur PIC', 'status' => 'active']);
 
         $this->stock = WarehouseStock::create([
             'product_id' => $this->product->id, 'lokasi_id' => $this->lokasi->id,
@@ -82,6 +82,7 @@ class ReturOfflineFeatureTest extends TestCase
         $this->saleItem = OfflineSaleItem::create([
             'offline_sale_id' => $this->offlineSale->id,
             'product_id' => $this->product->id,
+            'warehouse_stock_id' => $this->stock->id,
             'quantity' => 10, 'unit_price' => 50000, 'subtotal' => 500000,
         ]);
 

@@ -108,16 +108,16 @@ class FinanceOfflineCalculator
         $dppOriginal = NumberFormatter::roundToWholeNumber($dppOriginal);
         $returAmount = NumberFormatter::roundToWholeNumber($returAmount);
 
-        // NET = DPP original - retur
-        $netDPP = NumberFormatter::roundToWholeNumber(max(0, $dppOriginal - $returAmount));
+        // Total bersih yang harus dibayar customer offline (include PPN)
+        $netTotal = NumberFormatter::roundToWholeNumber(max(0, $dppOriginal - $returAmount));
 
         $netPPN = 0;
         if ($taxId == 3) {
-            $netDPP11_12 = NumberFormatter::calculateDPP1112($netDPP);
-            $netPPN = NumberFormatter::roundToWholeNumber(NumberFormatter::calculatePPN($netDPP11_12));
+            $netDPP = NumberFormatter::roundToWholeNumber($netTotal / 1.11);
+            $netPPN = NumberFormatter::roundToWholeNumber($netTotal - $netDPP);
+        } else {
+            $netDPP = $netTotal;
         }
-
-        $netTotal = NumberFormatter::roundToWholeNumber($netDPP + $netPPN);
 
         $totalPaid = NumberFormatter::roundToWholeNumber($invoice->payments->sum('amount'));
         $remainingAmount = NumberFormatter::roundToWholeNumber(max(0, $netTotal - $totalPaid));

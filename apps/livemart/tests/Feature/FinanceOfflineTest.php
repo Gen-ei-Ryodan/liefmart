@@ -59,11 +59,17 @@ class FinanceOfflineTest extends TestCase
         $this->seed(\Database\Seeders\PermissionSeeder::class);
         $this->seed(\Database\Seeders\SuperadminRoleSeeder::class);
 
-        $this->skincare = MainCategory::where('name', 'SKINCARE')->first();
-        $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first();
+        $this->skincare = MainCategory::where('is_active', true)->where('name', '!=', 'Kopi')->first() ?? MainCategory::first();
+        $this->taxCategory = TaxCategory::where('main_category_id', $this->skincare->id)->first() ?? TaxCategory::first();
         $this->lokasi = Lokasi::first();
         $this->product = Product::factory()->create(['main_category_id' => $this->skincare->id]);
-        $this->customer = Customer::create(['name' => 'Finance Customer', 'phone' => '08123', 'status' => 'active']);
+        $this->customer = Customer::create([
+            'name' => 'Finance Customer', 
+            'phone' => '08123', 
+            'email' => 'finance@example.com',
+            'pic_name' => 'Finance PIC',
+            'status' => 'active'
+        ]);
 
         $this->stock = WarehouseStock::create([
             'product_id' => $this->product->id,
@@ -83,6 +89,7 @@ class FinanceOfflineTest extends TestCase
         $this->saleItem = OfflineSaleItem::create([
             'offline_sale_id' => $this->offlineSale->id,
             'product_id' => $this->product->id,
+            'warehouse_stock_id' => $this->stock->id,
             'quantity' => 10, 'unit_price' => 100000, 'subtotal' => 1000000,
         ]);
 
@@ -270,7 +277,7 @@ class FinanceOfflineTest extends TestCase
 
         $response = $this->post(route('finance.offline.pay', $inv->id), [
             'payment_date' => now()->format('Y-m-d'),
-            'amount' => 300000,
+            'payment_amount' => 300000,
             'payment_method' => 'Tunai',
         ]);
 
@@ -392,7 +399,9 @@ class FinanceOfflineTest extends TestCase
 
         $payment = InvoicePayment::create([
             'finance_offline_id' => $inv->id,
-            'payment_date' => now(), 'amount' => 500000,
+            'payment_date' => now(), 
+            'amount' => 500000,
+            'payment_method' => 'transfer',
         ]);
 
         $response = $this->delete(route('finance.offline.delete-payment', $payment->id));

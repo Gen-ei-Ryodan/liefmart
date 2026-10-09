@@ -530,19 +530,8 @@ class ReturOfflineSaleController extends Controller
                         ? $firstItem->warehouseStock->tax_id 
                         : null;
                     
-                    // Calculate grand total (nominal + PPN)
-                    $dpp = \App\Helpers\NumberFormatter::calculateDPP($newNominalDPP);
-                    $grandTotal = $dpp;
-                    
-                    if ($taxId == 3) {
-                        // PKP: Calculate PPN
-                        $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-                        $ppn = \App\Helpers\NumberFormatter::calculatePPN($dpp11_12);
-                        $grandTotal = \App\Helpers\NumberFormatter::calculateGrandTotal($dpp, $ppn);
-                    } else {
-                        // Non-PKP: Just round DPP
-                        $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($dpp);
-                    }
+                    // Nominal offline sudah include PPN, grand total adalah nominal bersih
+                    $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($newNominalDPP);
                     
                     // Update invoice with recalculated nominal
                     // Remove partial_refund status and restore to normal

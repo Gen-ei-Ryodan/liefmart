@@ -243,23 +243,19 @@
                         // grandTotalRetur adalah total setelah diskon (DPP retur)
                         $dpp = \App\Helpers\NumberFormatter::calculateDPP($grandTotalRetur);
                         $ppn = 0;
-                        $grandTotal = $dpp;
+                        $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($grandTotalRetur);
                         
                         if ($taxId == 3) {
-                            // PKP: Calculate PPN
-                            // DPP = grandTotalRetur (total setelah diskon)
-                            // DPP 11/12 = DPP * (11/12)
-                            // PPN = DPP 11/12 * 12% = DPP * 0.11
+                            // PKP: Include PPN
+                            $dpp = \App\Helpers\NumberFormatter::roundToWholeNumber($grandTotal / 1.11);
                             $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-                            $ppn = \App\Helpers\NumberFormatter::calculatePPN($dpp11_12);
-                            $grandTotal = \App\Helpers\NumberFormatter::calculateGrandTotal($dpp, $ppn);
+                            $ppn = $grandTotal - $dpp;
                         } else {
                             // Non-PKP: No PPN
+                            $dpp = $grandTotal;
                             $dpp11_12 = 0;
                             $ppn = 0;
-                            $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($dpp);
                         }
-                        // grandTotal adalah nominal retur (pembayaran) = DPP + PPN
                     @endphp
 
                     <div class="card mt-3">

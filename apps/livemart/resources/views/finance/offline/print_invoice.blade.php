@@ -608,17 +608,17 @@
         @php
             // Calculate DPP from totalAfterDiscountFromGrouped (total harga setelah diskon dari grouped items yang ditampilkan)
             // Ini memastikan DPP sesuai dengan total subtotal yang ditampilkan di invoice
-            $dpp = \App\Helpers\NumberFormatter::calculateDPP($totalAfterDiscountFromGrouped);
-            $ppn = 0;
-            $grandTotal = $dpp;
+            $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($totalAfterDiscountFromGrouped);
             
             if ($isPKP) {
+                // Harga include PPN, breakdown ke DPP dan PPN
+                $dpp = \App\Helpers\NumberFormatter::roundToWholeNumber($grandTotal / 1.11);
                 $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($dpp);
-                $ppn = \App\Helpers\NumberFormatter::calculatePPN($dpp11_12);
-                $grandTotal = \App\Helpers\NumberFormatter::calculateGrandTotal($dpp, $ppn);
+                $ppn = $grandTotal - $dpp;
             } else {
+                $dpp = $grandTotal;
                 $dpp11_12 = 0;
-                $grandTotal = \App\Helpers\NumberFormatter::roundToWholeNumber($dpp);
+                $ppn = 0;
             }
         @endphp
         

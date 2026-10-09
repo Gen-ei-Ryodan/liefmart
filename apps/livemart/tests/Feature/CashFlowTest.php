@@ -83,7 +83,7 @@ class CashFlowTest extends TestCase
     }
 
     /** @test */
-    public void finance_tiktok_import_form_accessible()
+    public function finance_tiktok_import_form_accessible()
     {
         $response = $this->get(route('finance.tiktok.import'));
         $response->assertStatus(200);

@@ -808,13 +808,8 @@ class FinanceOfflineController extends Controller
                     $paymentDate = $offlineSale->payment_date ?? $offlineSale->sale_date;
                     $paymentMethod = $offlineSale->payment_method ?? 'cash';
                     
-                    // Calculate total payment amount including PPN for PKP items
-                    $totalPaymentAmount = $nominal; // Start with DPP
-                    if ($taxId == 3) { // PKP items
-                        $dpp11_12 = \App\Helpers\NumberFormatter::calculateDPP1112($nominal);
-                        $ppn = \App\Helpers\NumberFormatter::calculatePPN($dpp11_12);
-                        $totalPaymentAmount = \App\Helpers\NumberFormatter::calculateGrandTotal($nominal, $ppn);
-                    }
+                    // Pembayaran lunas sesuai nominal penjualan kasir (sudah include PPN)
+                    $totalPaymentAmount = $nominal;
                     
                     $payment = new \App\Models\InvoicePayment([
                         'finance_offline_id' => $financeOffline->id,

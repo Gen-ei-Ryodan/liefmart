@@ -147,4 +147,52 @@ class WarehouseStock extends Model
             $this->attributes['status_ed'] = 'aman';
         }
     }
+
+    /**
+     * Kurangi stok secara aman (atomic decrement dengan pencegahan stok minus).
+     *
+     * @param int|float $amount
+     * @return bool
+     * @throws \Exception
+     */
+    public function decrementStock($amount): bool
+    {
+        $amount = (float) $amount;
+        if ($amount <= 0) {
+            return true;
+        }
+
+        if ($this->qty < $amount) {
+            throw new \Exception("Stok tidak mencukupi untuk batch stock ID {$this->id}. Tersedia: {$this->qty}, diminta: {$amount}");
+        }
+
+        $affected = self::where('id', $this->id)
+            ->where('qty', '>=', $amount)
+            ->decrement('qty', $amount);
+
+        if (!$affected) {
+            throw new \Exception("Gagal mengurangi stok batch ID {$this->id} karena bentrokan konkurensi (race condition).");
+        }
+
+        $this->refresh();
+        return true;
+    }
+
+    /**
+     * Tambah stok secara aman.
+     *
+     * @param int|float $amount
+     * @return bool
+     */
+    public function incrementStock($amount): bool
+    {
+        $amount = (float) $amount;
+        if ($amount <= 0) {
+            return true;
+        }
+
+        self::where('id', $this->id)->increment('qty', $amount);
+        $this->refresh();
+        return true;
+    }
 }
