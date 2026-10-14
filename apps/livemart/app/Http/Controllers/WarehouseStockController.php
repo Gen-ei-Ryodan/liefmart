@@ -892,6 +892,13 @@ class WarehouseStockController extends Controller
                     return $item->penerimaan_detail_id ? 'penerimaan_'.$item->penerimaan_detail_id : 'single_'.$item->id;
                 }
 
+                // Penyesuaian (stock opname/adjustment) has source_id = NULL, so it must get
+                // its own key. Otherwise it falls into 'return_' and the remaining qty is shown
+                // instead of the original adjustment amount.
+                if ($item->source_type === 'penyesuaian') {
+                    return 'penyesuaian_'.$item->id;
+                }
+
                 // For returns, group by source_id (retur_penjualan_id) so multiple
                 // warehouse_stock entries from the same return are consolidated into one
                 return 'return_'.$item->source_id;
@@ -902,8 +909,16 @@ class WarehouseStockController extends Controller
             $consolidatedStockIn = $groupedStockIn->map(function ($groupItems, $groupKey) {
                 $firstItem = $groupItems->first();
 
+                // For penyesuaian, show original adjustment (current qty + barang keluar dari stock ini)
+                // Must be checked first: warehouse_stock.qty holds the *remaining* qty, which is
+                // reduced by later shipments, so it no longer equals the original adjustment.
+                if (strpos($groupKey, 'penyesuaian_') === 0 || $firstItem->source_type === 'penyesuaian') {
+                    $wsQty = (float) $groupItems->sum('qty');
+                    $bkQty = (float) \App\Models\BarangKeluar::where('warehouse_stock_id', $firstItem->id)->sum('qty');
+                    $firstItem->qty = $wsQty + $bkQty;
+                }
                 // For returns, use warehouse_stock.qty (actual returned quantity)
-                if (strpos($groupKey, 'return_') === 0) {
+                elseif (strpos($groupKey, 'return_') === 0) {
                     // For returns, use warehouse_stock.qty as is (sum all items in group if multiple)
                     $firstItem->qty = (float) $groupItems->sum('qty');
                 }
@@ -911,12 +926,6 @@ class WarehouseStockController extends Controller
                 // This is the original quantity received, regardless of current warehouse_stock.qty
                 elseif ($firstItem->penerimaanDetail && $firstItem->penerimaanDetail->qty) {
                     $firstItem->qty = (float) $firstItem->penerimaanDetail->qty;
-                }
-                // For penyesuaian, show original adjustment (current qty + barang keluar dari stock ini)
-                elseif ($firstItem->source_type === 'penyesuaian') {
-                    $wsQty = (float) $groupItems->sum('qty');
-                    $bkQty = (float) \App\Models\BarangKeluar::where('warehouse_stock_id', $firstItem->id)->sum('qty');
-                    $firstItem->qty = $wsQty + $bkQty;
                 }
                 // Fallback: use warehouse_stock.qty
                 else {

@@ -516,7 +516,10 @@ class StockMutationProductSheet implements FromCollection, ShouldAutoSize, WithE
 
                     $mutationType = 'in';
                     if ($item->source_type === 'penyesuaian') {
-                        $signedQty = (float) ($item->qty ?? 0);
+                        // Nominal penyesuaian = sisa qty + barang yang sudah keluar dari baris ini,
+                        // karena warehouse_stock.qty menyimpan sisa, bukan jumlah penyesuaian awal.
+                        $bkQty = (float) \App\Models\BarangKeluar::where('warehouse_stock_id', $item->id)->sum('qty');
+                        $signedQty = (float) ($item->qty ?? 0) + $bkQty;
                         if ($signedQty < 0) {
                             $mutationType = 'out';
                             $displayQty = abs($signedQty);
