@@ -149,16 +149,19 @@ class StockAnalyticsQuery
     }
 
     /**
-     * Baris stok bernilai negatif (mis. penyesuaian stock opname) tidak ikut
-     * terhitung di buildInventoryValueData() karena filter qty > 0, dan tidak
-     * punya harga_hpp sendiri karena tidak terikat penerimaan_detail.
+     * Baris stok negatif dan baris penyesuaian tidak ikut terhitung di
+     * buildInventoryValueData() (filter qty > 0, dan penyesuaian dikeluarkan
+     * eksplisit), serta tidak punya harga_hpp sendiri karena tidak terikat
+     * penerimaan_detail.
      *
-     * Dipakai untuk mengurangi total nilai inventaris, agar unit yang sudah
-     * keluar lewat penyesuaian tidak tetap dinilai.
+     * Dipakai untuk mengoreksi total nilai inventaris memakai HPP rata-rata
+     * tertimbang produknya: baris negatif mengurangi unit yang sudah keluar
+     * lewat penyesuaian, baris penyesuaian positif (mis. stok salah label
+     * yang dikoreksi masuk) menambah unit tersebut.
      *
      * @return string
      */
-    public static function buildNegativeStockData(): string
+    public static function buildAdjustmentStockData(): string
     {
         return "
             SELECT 
@@ -166,7 +169,7 @@ class StockAnalyticsQuery
                 SUM(ws.qty) AS qty
             FROM warehouse_stock ws
             WHERE ws.is_damaged = 0
-            AND ws.qty < 0
+            AND (ws.qty < 0 OR ws.source_type = 'penyesuaian')
             GROUP BY ws.product_id
         ";
     }

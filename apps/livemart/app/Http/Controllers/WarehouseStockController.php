@@ -786,12 +786,14 @@ class WarehouseStockController extends Controller
             }
         }
 
-        // Baris stok negatif tidak punya harga_hpp dan tidak ikut terhitung di query
-        // di atas (filter qty > 0), sehingga unit yang sudah keluar lewat penyesuaian
-        // tetap dinilai dan total inventaris membengkak. Nilai baris tersebut memakai
-        // HPP rata-rata tertimbang produknya. Produk tanpa baris bernilai dilewati
-        // karena tidak ada HPP yang bisa dipakai.
-        foreach (DB::select(StockAnalyticsQuery::buildNegativeStockData()) as $row) {
+        // Baris stok negatif dan baris penyesuaian tidak punya harga_hpp dan
+        // tidak ikut terhitung di query di atas (filter qty > 0 + penyesuaian
+        // dikeluarkan), sehingga unit yang berpindah lewat penyesuaian tetap
+        // dinilai dan total inventaris meleset. Nilai baris tersebut memakai
+        // HPP rata-rata tertimbang produknya, jadi penyesuaian negatif turun
+        // dan yang positif naik. Produk tanpa baris bernilai dilewati karena
+        // tidak ada HPP yang bisa dipakai.
+        foreach (DB::select(StockAnalyticsQuery::buildAdjustmentStockData()) as $row) {
             $bucket = $valueByProduct[$row->product_id] ?? null;
             if (! $bucket || $bucket['qty'] <= 0) {
                 continue;
