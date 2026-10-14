@@ -398,8 +398,8 @@ class SalesController extends Controller
                 }
                 
                 // Ambil total stok tersedia dari warehouse untuk produk ini
+                // Stok tersedia = net seluruh baris, termasuk baris penyesuaian negatif
                 $totalStok = WarehouseStock::where('product_id', $mapping->product_id)
-                    ->where('qty', '>', 0)
                     ->sum('qty');
                 
                 // Stok efektif berdasarkan jumlah yang dibutuhkan per item
@@ -558,15 +558,17 @@ class SalesController extends Controller
             
             // Ambil stok produk dari warehouse berdasarkan FIFO + prioritas HGN
             // PERBAIKAN: lockForUpdate() mencegah race condition saat 2 order diproses bersamaan
+            // Semua baris diambil (tanpa filter qty > 0) supaya $totalAvailable = stok NET.
+            // Baris penyesuaian negatif tidak bisa dipakai FIFO, tapi besarnya mengurangi
+            // stok yang benar-benar boleh dijual.
             $stocks = WarehouseStock::where('product_id', $mapping->product_id)
-                ->where('qty', '>', 0)
                 ->orderBy('created_at') // Layer 1: FIFO berdasarkan tanggal penerimaan
                 ->orderBy('tax_id', 'asc') // Layer 2: HGN (tax_id=3) dulu, baru LM (tax_id=4)
                 ->lockForUpdate()
                 ->get();
             
             // Hitung total stok tersedia
-            $totalAvailable = $stocks->sum('qty');
+            $totalAvailable = (float) $stocks->sum('qty');
             if ($totalAvailable < $qtyToReduce) {
                 $product = Product::find($mapping->product_id);
                 throw new \Exception("Stok tidak cukup untuk produk {$product->name}. Tersedia: {$totalAvailable}, Dibutuhkan: {$qtyToReduce}");
@@ -579,6 +581,10 @@ class SalesController extends Controller
             foreach ($stocks as $stock) {
                 if ($remainingQty <= 0) {
                     break;
+                }
+                
+                if ($stock->qty <= 0) {
+                    continue;
                 }
                 
                 // Hitung quantity yang akan dikurangi dari stok ini
@@ -1106,8 +1112,10 @@ class SalesController extends Controller
                 
                 // Get all available warehouse stocks for this product
                 // PERBAIKAN: lockForUpdate() mencegah race condition saat 2 penjualan berjalan bersamaan
+                // Semua baris diambil (tanpa filter qty > 0) supaya $totalAvailableStock = stok NET.
+                // Baris penyesuaian negatif tidak bisa dipakai FIFO, tapi besarnya mengurangi
+                // stok yang benar-benar boleh dijual.
                 $warehouseStocks = WarehouseStock::where('product_id', $productId)
-                    ->where('qty', '>', 0)
                     ->orderBy('created_at')   // Layer 1: FIFO berdasarkan tanggal penerimaan
                     ->orderBy('tax_id', 'asc') // Layer 2: HGN (tax_id=3) dulu, baru LM (tax_id=4)
                     ->lockForUpdate()
@@ -1118,7 +1126,7 @@ class SalesController extends Controller
                 }
                 
                 // Check if the total available stock is enough
-                $totalAvailableStock = $warehouseStocks->sum('qty');
+                $totalAvailableStock = (float) $warehouseStocks->sum('qty');
                 $requestedQuantity = $request->quantity[$i];
                 
                 if ($totalAvailableStock < $requestedQuantity) {
@@ -1132,6 +1140,10 @@ class SalesController extends Controller
                 foreach ($warehouseStocks as $stock) {
                     if ($remainingQuantity <= 0) {
                         break;
+                    }
+                    
+                    if ($stock->qty <= 0) {
+                        continue;
                     }
                     
                     $quantityToTake = min($remainingQuantity, $stock->qty);

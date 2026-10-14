@@ -743,6 +743,7 @@ class WarehouseStockController extends Controller
         $inventoryValueData = DB::select($inventoryValueQuery);
 
         $totalInventoryValue = 0;
+        $valueByProduct = [];
         foreach ($inventoryValueData as $row) {
             $hppAsli = (float) ($row->harga_hpp ?? 0);
             $hppSetelahDiskon = $hppAsli;
@@ -775,7 +776,28 @@ class WarehouseStockController extends Controller
             $finalHpp = max(0, $hppSetelahDiskon);
 
             // Add to total
-            $totalInventoryValue += $finalHpp * (float) ($row->qty ?? 0);
+            $lineValue = $finalHpp * (float) ($row->qty ?? 0);
+            $totalInventoryValue += $lineValue;
+
+            $invProductId = $row->product_id ?? null;
+            if ($invProductId !== null) {
+                $valueByProduct[$invProductId]['qty'] = ($valueByProduct[$invProductId]['qty'] ?? 0) + (float) ($row->qty ?? 0);
+                $valueByProduct[$invProductId]['value'] = ($valueByProduct[$invProductId]['value'] ?? 0) + $lineValue;
+            }
+        }
+
+        // Baris stok negatif tidak punya harga_hpp dan tidak ikut terhitung di query
+        // di atas (filter qty > 0), sehingga unit yang sudah keluar lewat penyesuaian
+        // tetap dinilai dan total inventaris membengkak. Nilai baris tersebut memakai
+        // HPP rata-rata tertimbang produknya. Produk tanpa baris bernilai dilewati
+        // karena tidak ada HPP yang bisa dipakai.
+        foreach (DB::select(StockAnalyticsQuery::buildNegativeStockData()) as $row) {
+            $bucket = $valueByProduct[$row->product_id] ?? null;
+            if (! $bucket || $bucket['qty'] <= 0) {
+                continue;
+            }
+
+            $totalInventoryValue += ($bucket['value'] / $bucket['qty']) * (float) $row->qty;
         }
 
         // Build product stock history data (for AJAX fetch later)

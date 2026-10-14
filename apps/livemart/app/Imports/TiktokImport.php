@@ -1179,13 +1179,23 @@ class TiktokImport implements ToCollection, WithMultipleSheets
 
                 // Ambil stok produk dari warehouse berdasarkan FIFO + prioritas HGN
                 // PERBAIKAN: lockForUpdate() mencegah race condition saat 2 import berjalan bersamaan
+                // Semua baris diambil (tanpa filter qty > 0) supaya stok tersedia = stok NET.
+                // Baris penyesuaian negatif tidak bisa dipakai FIFO, tapi besarnya mengurangi
+                // stok yang benar-benar boleh dijual.
                 $stocks = WarehouseStock::where('product_id', $mapping->product_id)
-                    ->where('qty', '>', 0)
                     ->orderBy('created_at') // Layer 1: FIFO berdasarkan tanggal penerimaan
                     ->orderBy('tax_id', 'asc') // Layer 2: HGN (tax_id=3) dulu, baru LM (tax_id=4)
                     ->lockForUpdate()
                     ->get();
                 \Log::info('Found stock records: ' . $stocks->count());
+
+                // Cek dulu sebelum ada stok yang dipotong, supaya tidak meninggalkan
+                // barang keluar parsial saat stok ternyata tidak cukup.
+                $totalAvailable = (float) $stocks->sum('qty');
+                if ($totalAvailable < $qtyToReduce) {
+                    $productName = $mapping->product ? $mapping->product->name : "Product ID: {$mapping->product_id}";
+                    throw new \Exception("Stok tidak cukup untuk produk {$productName}. Tersedia: {$totalAvailable}, Dibutuhkan: {$qtyToReduce}");
+                }
 
                 $remainingQty = $qtyToReduce;
                 $isFirstStock = true;  // Flag untuk menandai stok pertama
@@ -1193,6 +1203,10 @@ class TiktokImport implements ToCollection, WithMultipleSheets
                 foreach ($stocks as $stock) {
                     if ($remainingQty <= 0) {
                         break;
+                    }
+
+                    if ($stock->qty <= 0) {
+                        continue;
                     }
 
                     $qtyToTake = min($remainingQty, $stock->qty);

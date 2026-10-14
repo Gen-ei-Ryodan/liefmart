@@ -126,6 +126,7 @@ class StockAnalyticsQuery
     {
         return "
             SELECT 
+                ws.product_id,
                 ws.qty,
                 pd.harga_hpp,
                 pd.diskon_persen_1,
@@ -144,6 +145,29 @@ class StockAnalyticsQuery
             AND (ws.source_type IS NULL OR ws.source_type != 'penyesuaian')
             AND ws.qty > 0
             AND pd.harga_hpp IS NOT NULL
+        ";
+    }
+
+    /**
+     * Baris stok bernilai negatif (mis. penyesuaian stock opname) tidak ikut
+     * terhitung di buildInventoryValueData() karena filter qty > 0, dan tidak
+     * punya harga_hpp sendiri karena tidak terikat penerimaan_detail.
+     *
+     * Dipakai untuk mengurangi total nilai inventaris, agar unit yang sudah
+     * keluar lewat penyesuaian tidak tetap dinilai.
+     *
+     * @return string
+     */
+    public static function buildNegativeStockData(): string
+    {
+        return "
+            SELECT 
+                ws.product_id,
+                SUM(ws.qty) AS qty
+            FROM warehouse_stock ws
+            WHERE ws.is_damaged = 0
+            AND ws.qty < 0
+            GROUP BY ws.product_id
         ";
     }
 
