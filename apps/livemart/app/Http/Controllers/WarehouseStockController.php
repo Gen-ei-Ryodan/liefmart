@@ -743,6 +743,7 @@ class WarehouseStockController extends Controller
         $inventoryValueData = DB::select($inventoryValueQuery);
 
         $totalInventoryValue = 0;
+        $valueByProduct = [];
         foreach ($inventoryValueData as $row) {
             $hppAsli = (float) ($row->harga_hpp ?? 0);
             $hppSetelahDiskon = $hppAsli;
@@ -775,7 +776,30 @@ class WarehouseStockController extends Controller
             $finalHpp = max(0, $hppSetelahDiskon);
 
             // Add to total
-            $totalInventoryValue += $finalHpp * (float) ($row->qty ?? 0);
+            $lineValue = $finalHpp * (float) ($row->qty ?? 0);
+            $totalInventoryValue += $lineValue;
+
+            $invProductId = $row->product_id ?? null;
+            if ($invProductId !== null) {
+                $valueByProduct[$invProductId]['qty'] = ($valueByProduct[$invProductId]['qty'] ?? 0) + (float) ($row->qty ?? 0);
+                $valueByProduct[$invProductId]['value'] = ($valueByProduct[$invProductId]['value'] ?? 0) + $lineValue;
+            }
+        }
+
+        // Baris stok negatif dan baris penyesuaian tidak punya harga_hpp dan
+        // tidak ikut terhitung di query di atas (filter qty > 0 + penyesuaian
+        // dikeluarkan), sehingga unit yang berpindah lewat penyesuaian tetap
+        // dinilai dan total inventaris meleset. Nilai baris tersebut memakai
+        // HPP rata-rata tertimbang produknya, jadi penyesuaian negatif turun
+        // dan yang positif naik. Produk tanpa baris bernilai dilewati karena
+        // tidak ada HPP yang bisa dipakai.
+        foreach (DB::select(StockAnalyticsQuery::buildAdjustmentStockData()) as $row) {
+            $bucket = $valueByProduct[$row->product_id] ?? null;
+            if (! $bucket || $bucket['qty'] <= 0) {
+                continue;
+            }
+
+            $totalInventoryValue += ($bucket['value'] / $bucket['qty']) * (float) $row->qty;
         }
 
         // Build product stock history data (for AJAX fetch later)
@@ -890,17 +914,21 @@ class WarehouseStockController extends Controller
                 if (! $item->source_type || $item->source_type === 'penerimaan') {
                     return $item->penerimaan_detail_id ? 'penerimaan_'.$item->penerimaan_detail_id : 'single_'.$item->id;
                 }
-                if ($item->source_type === 'retur_penjualan' || $item->source_type === 'retur_offline') {
-                    return 'return_'.($item->source_id ?: $item->id);
-                }
+
                 if ($item->source_type === 'penyesuaian') {
                     return 'penyesuaian_'.$item->id;
                 }
+
+                if ($item->source_type === 'retur_penjualan' || $item->source_type === 'retur_offline') {
+                    return 'return_'.($item->source_id ?: $item->id);
+                }
+
                 return 'other_'.$item->id;
             });
 
             // Create a list - one entry per grouped transaction
             // Calculate original incoming quantity: current warehouse_stock qty + all outgoing (barang_keluar) attached to this batch
+            // This ensures all transactions (receipts, sales returns that were resold, adjustments) reconcile 100% with physical inventory
             $consolidatedStockIn = $groupedStockIn->map(function ($groupItems, $groupKey) {
                 $firstItem = $groupItems->first();
 

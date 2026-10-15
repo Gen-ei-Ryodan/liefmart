@@ -297,8 +297,8 @@ class Shopee2Controller extends Controller
                 
                 // Cek stok berdasarkan TOTAL kebutuhan dari seluruh file Excel
                 foreach ($totalProductQuantities as $productId => $totalRequiredQty) {
+                    // Stok tersedia = net seluruh baris, termasuk baris penyesuaian negatif
                     $availableStock = \App\Models\WarehouseStock::where('product_id', $productId)
-                        ->where('qty', '>', 0)
                         ->sum('qty');
                     
                     // Debug logging untuk stok

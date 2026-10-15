@@ -420,8 +420,15 @@ class StockMutationProductSheet implements FromCollection, ShouldAutoSize, WithE
                     return $item->penerimaan_detail_id ? 'penerimaan_'.$item->penerimaan_detail_id : 'single_'.$item->id;
                 }
 
-                // For returns, keep each item separate (they have different source_ids)
-                return 'return_'.$item->id;
+                // Penyesuaian has source_id = NULL, so it must get its own key per row
+                if ($item->source_type === 'penyesuaian') {
+                    return 'penyesuaian_'.$item->id;
+                }
+
+                // For returns, group by source_id (retur id) so one return is exported once.
+                // A single return can create several warehouse_stock rows for the same product
+                // (different ED), and the detail qty would otherwise be counted per row.
+                return 'return_'.$item->source_id;
             });
 
             // Process stock in with better error handling
@@ -516,7 +523,10 @@ class StockMutationProductSheet implements FromCollection, ShouldAutoSize, WithE
 
                     $mutationType = 'in';
                     if ($item->source_type === 'penyesuaian') {
-                        $signedQty = (float) ($item->qty ?? 0);
+                        // Nominal penyesuaian = sisa qty + barang yang sudah keluar dari baris ini,
+                        // karena warehouse_stock.qty menyimpan sisa, bukan jumlah penyesuaian awal.
+                        $bkQty = (float) \App\Models\BarangKeluar::where('warehouse_stock_id', $item->id)->sum('qty');
+                        $signedQty = (float) ($item->qty ?? 0) + $bkQty;
                         if ($signedQty < 0) {
                             $mutationType = 'out';
                             $displayQty = abs($signedQty);

@@ -126,6 +126,7 @@ class StockAnalyticsQuery
     {
         return "
             SELECT 
+                ws.product_id,
                 ws.qty,
                 pd.harga_hpp,
                 pd.diskon_persen_1,
@@ -144,6 +145,32 @@ class StockAnalyticsQuery
             AND (ws.source_type IS NULL OR ws.source_type != 'penyesuaian')
             AND ws.qty > 0
             AND pd.harga_hpp IS NOT NULL
+        ";
+    }
+
+    /**
+     * Baris stok negatif dan baris penyesuaian tidak ikut terhitung di
+     * buildInventoryValueData() (filter qty > 0, dan penyesuaian dikeluarkan
+     * eksplisit), serta tidak punya harga_hpp sendiri karena tidak terikat
+     * penerimaan_detail.
+     *
+     * Dipakai untuk mengoreksi total nilai inventaris memakai HPP rata-rata
+     * tertimbang produknya: baris negatif mengurangi unit yang sudah keluar
+     * lewat penyesuaian, baris penyesuaian positif (mis. stok salah label
+     * yang dikoreksi masuk) menambah unit tersebut.
+     *
+     * @return string
+     */
+    public static function buildAdjustmentStockData(): string
+    {
+        return "
+            SELECT 
+                ws.product_id,
+                SUM(ws.qty) AS qty
+            FROM warehouse_stock ws
+            WHERE ws.is_damaged = 0
+            AND (ws.qty < 0 OR ws.source_type = 'penyesuaian')
+            GROUP BY ws.product_id
         ";
     }
 

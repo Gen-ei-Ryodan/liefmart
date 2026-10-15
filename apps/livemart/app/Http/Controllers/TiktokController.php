@@ -302,13 +302,26 @@ public function importExcel()
                 // CEK STOK PER ORDER (simulasi FIFO seperti reduceStock)
                 $virtualStock = [];
                 foreach (array_keys($totalProductQuantities) as $productId) {
-                    $stockQtys = \App\Models\WarehouseStock::where('product_id', $productId)
-                        ->where('qty', '>', 0)
+                    $allQtys = \App\Models\WarehouseStock::where('product_id', $productId)
                         ->orderBy('warehouse_stock.created_at')
                         ->orderBy('warehouse_stock.tax_id', 'asc')
                         ->pluck('warehouse_stock.qty')
+                        ->map(fn ($qty) => (float) $qty)
                         ->toArray();
-                    $virtualStock[$productId] = $stockQtys;
+
+                    // FIFO hanya bisa mengambil dari baris qty > 0, tapi total yang boleh
+                    // dijual = stok net seluruh baris. Selisihnya berasal dari baris
+                    // penyesuaian negatif yang tidak punya batch untuk dipotong, jadi
+                    // kelebihan kapasitas itu dipotong dari pool sebelum disimulasikan.
+                    $pool = array_values(array_filter($allQtys, fn ($qty) => $qty > 0));
+                    $excess = max(0.0, array_sum($pool) - array_sum($allQtys));
+                    for ($i = count($pool) - 1; $excess > 0 && $i >= 0; $i--) {
+                        $newQty = max(0, $pool[$i] - $excess);
+                        $excess -= $pool[$i] - $newQty;
+                        $pool[$i] = $newQty;
+                    }
+
+                    $virtualStock[$productId] = array_values(array_filter($pool, fn ($qty) => $qty > 0));
                 }
 
                 foreach ($orderProductQuantities as $orderNumber => $products) {
@@ -565,21 +578,30 @@ public function importExcel()
             
             // Cek stok berdasarkan TOTAL kebutuhan dari seluruh file Excel
             foreach ($totalProductQuantities as $productId => $totalRequiredQty) {
+                // Semua baris diambil (tanpa filter qty > 0) supaya stok tersedia = stok NET.
+                // Baris penyesuaian negatif tidak bisa dipakai FIFO, tapi besarnya mengurangi
+                // stok yang boleh dijual.
                 $stocks = \App\Models\WarehouseStock::where('product_id', $productId)
-                    ->where('qty', '>', 0)
                     ->orderBy('warehouse_stock.created_at')
                     ->orderBy('warehouse_stock.tax_id', 'asc')
                     ->get(['warehouse_stock.qty']);
 
+                $availableQty = max(0, (float) $stocks->sum('qty'));
                 $remainingQty = $totalRequiredQty;
+                $taken = 0;
                 foreach ($stocks as $stock) {
-                    if ($remainingQty <= 0) {
+                    if ($remainingQty <= 0 || $taken >= $availableQty) {
                         break;
                     }
 
-                    $qtyToTake = min($remainingQty, $stock->qty);
+                    if ($stock->qty <= 0) {
+                        continue;
+                    }
+
+                    $qtyToTake = min($remainingQty, $stock->qty, $availableQty - $taken);
 
                     $remainingQty -= $qtyToTake;
+                    $taken += $qtyToTake;
                 }
 
                 if ($remainingQty > 0) {
