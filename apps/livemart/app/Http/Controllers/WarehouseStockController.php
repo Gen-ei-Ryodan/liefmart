@@ -882,46 +882,31 @@ class WarehouseStockController extends Controller
 
             // Visual mutations removed - only show real database data
 
-            // Group stock_in items by penerimaan_detail_id (simple approach)
-            // Use penerimaan_detail.qty which is fixed and doesn't change
-            // Don't use warehouse_stock.qty because it's dynamic
+            // Group stock_in items by logical transaction
+            // Normal penerimaan: grouped by penerimaan_detail_id
+            // Returns: grouped by return source_id (or batch id if null)
+            // Adjustments: grouped by batch id
             $groupedStockIn = $stockItems->groupBy(function ($item) {
-                // For normal penerimaan (not returns), group by penerimaan_detail_id only
-                // This ensures one entry per penerimaan, even if there are multiple EDs
                 if (! $item->source_type || $item->source_type === 'penerimaan') {
                     return $item->penerimaan_detail_id ? 'penerimaan_'.$item->penerimaan_detail_id : 'single_'.$item->id;
                 }
-
-                // For returns, group by source_id (retur_penjualan_id) so multiple
-                // warehouse_stock entries from the same return are consolidated into one
-                return 'return_'.$item->source_id;
+                if ($item->source_type === 'retur_penjualan' || $item->source_type === 'retur_offline') {
+                    return 'return_'.($item->source_id ?: $item->id);
+                }
+                if ($item->source_type === 'penyesuaian') {
+                    return 'penyesuaian_'.$item->id;
+                }
+                return 'other_'.$item->id;
             });
 
-            // Create a list - one entry per penerimaan_detail_id
-            // Use penerimaan_detail.qty which is the original fixed quantity
+            // Create a list - one entry per grouped transaction
+            // Calculate original incoming quantity: current warehouse_stock qty + all outgoing (barang_keluar) attached to this batch
             $consolidatedStockIn = $groupedStockIn->map(function ($groupItems, $groupKey) {
                 $firstItem = $groupItems->first();
 
-                // For returns, use warehouse_stock.qty (actual returned quantity)
-                if (strpos($groupKey, 'return_') === 0) {
-                    // For returns, use warehouse_stock.qty as is (sum all items in group if multiple)
-                    $firstItem->qty = (float) $groupItems->sum('qty');
-                }
-                // For normal penerimaan, use penerimaan_detail.qty (fixed, doesn't change)
-                // This is the original quantity received, regardless of current warehouse_stock.qty
-                elseif ($firstItem->penerimaanDetail && $firstItem->penerimaanDetail->qty) {
-                    $firstItem->qty = (float) $firstItem->penerimaanDetail->qty;
-                }
-                // For penyesuaian, show original adjustment (current qty + barang keluar dari stock ini)
-                elseif ($firstItem->source_type === 'penyesuaian') {
-                    $wsQty = (float) $groupItems->sum('qty');
-                    $bkQty = (float) \App\Models\BarangKeluar::where('warehouse_stock_id', $firstItem->id)->sum('qty');
-                    $firstItem->qty = $wsQty + $bkQty;
-                }
-                // Fallback: use warehouse_stock.qty
-                else {
-                    $firstItem->qty = (float) $groupItems->sum('qty');
-                }
+                $wsQty = (float) $groupItems->sum('qty');
+                $bkQty = (float) \App\Models\BarangKeluar::whereIn('warehouse_stock_id', $groupItems->pluck('id'))->sum('qty');
+                $firstItem->qty = $wsQty + $bkQty;
 
                 // Check if there are multiple EDs for this penerimaan_detail_id
                 if (strpos($groupKey, 'penerimaan_') === 0) {

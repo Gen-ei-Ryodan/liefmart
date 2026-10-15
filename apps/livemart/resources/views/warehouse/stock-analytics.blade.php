@@ -1127,35 +1127,8 @@
                                 }
                             }
                             
-                            // CRITICAL: For mutation table, show ACTUAL quantities that moved
-                            // 1. Barang masuk NORMAL: gunakan penerimaan_detail.qty (fixed, tidak berubah)
-                            //    Backend sudah set item.qty = penerimaan_detail.qty, jadi langsung pakai item.qty
-                            // 2. Barang masuk RETUR: gunakan retur_penjualan_detail.qty (original returned quantity)
+                            // Use the accurate incoming quantity computed by backend (original received / returned / adjusted quantity)
                             let qty = parseFloat(item.qty || 0);
-                            
-                            if (item.source_type && (item.source_type === 'retur_penjualan' || item.source_type === 'retur_offline')) {
-                                // MUTASI KARENA RETUR: gunakan quantity asli dari retur detail (tidak berubah)
-                                if (item.source_type === 'retur_penjualan' && item.retur_penjualan && item.retur_penjualan.details) {
-                                    // Cari detail retur yang sesuai dengan product_id
-                                    const returDetail = item.retur_penjualan.details.find(detail => detail.product_id === item.product_id);
-                                    qty = returDetail ? parseFloat(returDetail.qty || 0) : parseFloat(item.qty || 0);
-                                } else if (item.source_type === 'retur_offline' && item.retur_offline_sale && item.retur_offline_sale.details) {
-                                    // Cari detail retur offline yang sesuai dengan product_id
-                                    const returDetail = item.retur_offline_sale.details.find(detail => detail.product_id === item.product_id);
-                                    qty = returDetail ? parseFloat(returDetail.qty || 0) : parseFloat(item.qty || 0);
-                                } else {
-                                    // Fallback - use item.qty
-                                    qty = parseFloat(item.qty || 0);
-                                }
-                            } else if (item.penerimaan_detail_id && item.penerimaan_detail && item.penerimaan_detail.qty) {
-                                // MUTASI NORMAL: 
-                                // Backend sudah set item.qty = penerimaan_detail.qty (fixed, tidak berubah)
-                                // Gunakan item.qty yang sudah di-set oleh backend
-                                qty = parseFloat(item.qty || 0);
-                            } else {
-                                // Fallback - use item.qty (already set by backend)
-                                qty = parseFloat(item.qty || 0);
-                            }
 
                             if (item.source_type === 'penyesuaian') {
                                 const signedQty = parseFloat(item.qty || 0);
