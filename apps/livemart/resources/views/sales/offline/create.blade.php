@@ -80,6 +80,7 @@
 
                     <form method="POST" action="{{ route('sales.offline.store') }}" id="offlineSaleForm">
                         @csrf
+                        <input type="hidden" name="submission_token" value="{{ $submissionToken ?? session('offline_sale_submission_token') ?? (string) \Illuminate\Support\Str::uuid() }}">
                         
                         <div class="row">
                             <div class="col-md-6">
@@ -252,7 +253,11 @@
                                 Batal
                             </button>
                             <button type="submit" class="btn btn-primary" id="submitBtn">
-                                Simpan
+                                <span id="submitBtnText">Simpan</span>
+                                <span id="submitBtnSpinner" class="d-none">
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                    Menyimpan...
+                                </span>
                             </button>
                         </div>
                     </form>
@@ -746,8 +751,15 @@
             }
         });
         
+        let isSubmitting = false;
+
         // Form validation before submission
         document.getElementById('offlineSaleForm').addEventListener('submit', function(event) {
+            if (isSubmitting) {
+                event.preventDefault();
+                return false;
+            }
+
             // First, ensure all discount rows are properly numbered in sequence
             document.querySelectorAll('.discount-container').forEach(container => {
                 renumberDiscountRows(container);
@@ -800,6 +812,23 @@
             
             if (!isValid) {
                 event.preventDefault();
+                return false;
+            }
+
+            // Mencegah double submit: set flag, disable button, tampilkan spinner
+            isSubmitting = true;
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnSpinner = document.getElementById('submitBtnSpinner');
+
+            if (submitBtn) {
+                submitBtn.style.pointerEvents = 'none';
+                submitBtn.classList.add('disabled');
+                if (submitBtnText) submitBtnText.classList.add('d-none');
+                if (submitBtnSpinner) submitBtnSpinner.classList.remove('d-none');
+                setTimeout(function() {
+                    submitBtn.disabled = true;
+                }, 10);
             }
         });
         
