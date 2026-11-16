@@ -378,95 +378,82 @@ class ProductAnalyticsController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
         
-        // Calculate total orders correctly (unique orders, exclude returns) - same logic as salesByPlatformReport
-        $baseOrderQuery = Order::withoutGlobalScope('mainCategory')
-            ->whereNotNull('platform_id')
-            ->whereBetween('tanggal', [$startDateCarbon, $endDateCarbon]);
-        
+        // Calculate total orders correctly (unique orders, exclude returns) - direct DB aggregate (no memory array pluck)
+        $validOrdersBase = DB::table('orders')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                    ->from('retur_penjualans')
+                    ->whereColumn('retur_penjualans.order_id', 'orders.id')
+                    ->whereIn('status', ['draft', 'selesai']);
+            });
+
         if ($selectedPlatform) {
-            $baseOrderQuery->where('platform_id', $selectedPlatform);
+            $validOrdersBase->where('orders.platform_id', $selectedPlatform);
         }
-        
-        // Apply search filter to orders (if search is used, filter orders that have matching products)
+
         if ($search) {
-            $baseOrderQuery->whereHas('orderItems.platformProduct', function($q) use ($search) {
-                $q->where('platform_product_name', 'like', "%$search%")
-                  ->orWhere('variant', 'like', "%$search%");
+            $validOrdersBase->whereExists(function($q) use ($search) {
+                $q->select(DB::raw(1))
+                    ->from('order_items')
+                    ->join('platform_products', 'order_items.platform_product_id', '=', 'platform_products.id')
+                    ->whereColumn('order_items.order_id', 'orders.id')
+                    ->where(function($sub) use ($search) {
+                        $sub->where('platform_products.platform_product_name', 'like', "%$search%")
+                            ->orWhere('platform_products.variant', 'like', "%$search%");
+                    });
             });
         }
-        
-        // Get all order IDs matching filters
-        $allOrderIds = $baseOrderQuery->pluck('id')->toArray();
-        
-        // Get order IDs that have returns (exclude them)
-        $orderIdsWithReturn = [];
-        if (!empty($allOrderIds)) {
-            $orderIdsWithReturn = ReturPenjualan::whereIn('order_id', $allOrderIds)
-                ->pluck('order_id')
-                ->unique()
-                ->toArray();
-        }
-        
-        // Calculate unique valid orders (excluding returns)
-        $totalOrders = count($allOrderIds) - count($orderIdsWithReturn);
-        
-        // Get valid order IDs (excluding returns)
-        $validOrderIds = array_diff($allOrderIds, $orderIdsWithReturn);
-        
-        // Get total returns count
-        $totalReturnsCount = !empty($allOrderIds) 
-            ? ReturPenjualan::whereIn('order_id', $allOrderIds)->count() 
-            : 0;
-        
-        // Calculate total_value and total_volume from valid orders only (same logic as salesByPlatformReport)
-        // FIXED: Count distinct platform_products.id correctly
-        $summaryData = null;
-        if (!empty($validOrderIds)) {
-            // Get total products (distinct count)
-            $totalProductsCount = DB::table('order_items')
-                ->join('platform_products', 'order_items.platform_product_id', '=', 'platform_products.id')
-                ->whereIn('order_items.order_id', $validOrderIds)
-                ->when($selectedPlatform, function($q) use ($selectedPlatform) {
-                    $q->where('platform_products.platform_id', $selectedPlatform);
-                })
-                ->when($search, function($q) use ($search) {
-                    $q->where(function($query) use ($search) {
-                        $query->where('platform_products.platform_product_name', 'like', "%$search%")
-                              ->orWhere('platform_products.variant', 'like', "%$search%");
-                    });
-                })
-                ->distinct()
-                ->count('platform_products.id');
-            
-            // Get total quantity and value
-            $summaryAggregates = DB::table('order_items')
-                ->join('platform_products', 'order_items.platform_product_id', '=', 'platform_products.id')
-                ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_quantity_sold')
-                ->selectRaw('COALESCE(SUM(order_items.price_after_discount * order_items.quantity), 0) as total_value')
-                ->whereIn('order_items.order_id', $validOrderIds)
-                ->when($selectedPlatform, function($q) use ($selectedPlatform) {
-                    $q->where('platform_products.platform_id', $selectedPlatform);
-                })
-                ->when($search, function($q) use ($search) {
-                    $q->where(function($query) use ($search) {
-                        $query->where('platform_products.platform_product_name', 'like', "%$search%")
-                              ->orWhere('platform_products.variant', 'like', "%$search%");
-                    });
-                })
-                ->first();
-            
-            $summaryData = (object)[
-                'total_products' => $totalProductsCount,
-                'total_quantity_sold' => $summaryAggregates->total_quantity_sold,
-                'total_value' => $summaryAggregates->total_value
-            ];
-        } else {
-            $summaryData = (object)[
-                'total_products' => 0,
-                'total_quantity_sold' => 0,
-                'total_value' => 0
-            ];
-        }
+
+        $totalOrders = (clone $validOrdersBase)->count('orders.id');
+
+        // Total returns count in period
+        $totalReturnsCount = DB::table('retur_penjualans')
+            ->whereIn('status', ['draft', 'selesai'])
+            ->whereExists(function($q) use ($startDateCarbon, $endDateCarbon, $selectedPlatform) {
+                $q->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.id', 'retur_penjualans.order_id')
+                    ->whereNotNull('orders.platform_id')
+                    ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon]);
+                if ($selectedPlatform) {
+                    $q->where('orders.platform_id', $selectedPlatform);
+                }
+            })
+            ->count();
+
+        // Calculate total_value, total_volume, and distinct platform products from valid orders
+        $summaryAggregates = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('platform_products', 'order_items.platform_product_id', '=', 'platform_products.id')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                    ->from('retur_penjualans')
+                    ->whereColumn('retur_penjualans.order_id', 'orders.id')
+                    ->whereIn('status', ['draft', 'selesai']);
+            })
+            ->when($selectedPlatform, function($q) use ($selectedPlatform) {
+                $q->where('orders.platform_id', $selectedPlatform);
+            })
+            ->when($search, function($q) use ($search) {
+                $q->where(function($query) use ($search) {
+                    $query->where('platform_products.platform_product_name', 'like', "%$search%")
+                          ->orWhere('platform_products.variant', 'like', "%$search%");
+                });
+            })
+            ->selectRaw('COUNT(DISTINCT platform_products.id) as total_products')
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_quantity_sold')
+            ->selectRaw('COALESCE(SUM(order_items.price_after_discount * order_items.quantity), 0) as total_value')
+            ->first();
+
+        $summaryData = (object)[
+            'total_products' => (int) ($summaryAggregates->total_products ?? 0),
+            'total_quantity_sold' => (float) ($summaryAggregates->total_quantity_sold ?? 0),
+            'total_value' => (float) ($summaryAggregates->total_value ?? 0)
+        ];
         
         // Calculate total returns using database query (no collection looping)
         $totalReturnsData = DB::table('order_items')
@@ -503,42 +490,46 @@ class ProductAnalyticsController extends Controller
         
         $totalReturnsQty = $totalReturnsData ? (float) $totalReturnsData->total_returns : 0;
         
-        // Calculate returns from valid orders only (for net quantity calculation)
-        $returnsFromValidOrders = 0;
-        if (!empty($validOrderIds)) {
-            $returnsValidData = DB::table('order_items')
-                ->join('orders', 'order_items.order_id', '=', 'orders.id')
-                ->join('platform_products', 'order_items.platform_product_id', '=', 'platform_products.id')
-                ->whereIn('order_items.order_id', $validOrderIds)
-                ->when($selectedPlatform, function($q) use ($selectedPlatform) {
-                    $q->where('platform_products.platform_id', $selectedPlatform);
-                })
-                ->when($search, function($q) use ($search) {
-                    $q->where(function($query) use ($search) {
-                        $query->where('platform_products.platform_product_name', 'like', "%$search%")
-                              ->orWhere('platform_products.variant', 'like', "%$search%");
-                    });
-                })
-                ->selectRaw('
-                    SUM(
-                        (
-                            SELECT COALESCE(SUM(rpd.qty), 0)
-                            FROM retur_penjualan_details rpd
-                            JOIN retur_penjualans rp ON rpd.retur_penjualan_id = rp.id
-                            WHERE rpd.order_item_id = order_items.id
-                              AND rp.status IN ("draft", "selesai")
-                        ) / (
-                            SELECT COALESCE(SUM(mb.quantity), 1)
-                            FROM mapping_barangs mb
-                            WHERE mb.platform_product_id = order_items.platform_product_id
-                              AND mb.is_active = 1
-                        )
-                    ) as returns_from_valid
-                ')
-                ->first();
-            
-            $returnsFromValidOrders = $returnsValidData ? (float) $returnsValidData->returns_from_valid : 0;
-        }
+        // Calculate returns from valid orders directly via DB query (without whereIn validOrderIds)
+        $returnsValidData = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('platform_products', 'order_items.platform_product_id', '=', 'platform_products.id')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                    ->from('retur_penjualans')
+                    ->whereColumn('retur_penjualans.order_id', 'orders.id')
+                    ->whereIn('status', ['draft', 'selesai']);
+            })
+            ->when($selectedPlatform, function($q) use ($selectedPlatform) {
+                $q->where('platform_products.platform_id', $selectedPlatform);
+            })
+            ->when($search, function($q) use ($search) {
+                $q->where(function($query) use ($search) {
+                    $query->where('platform_products.platform_product_name', 'like', "%$search%")
+                          ->orWhere('platform_products.variant', 'like', "%$search%");
+                });
+            })
+            ->selectRaw('
+                SUM(
+                    (
+                        SELECT COALESCE(SUM(rpd.qty), 0)
+                        FROM retur_penjualan_details rpd
+                        JOIN retur_penjualans rp ON rpd.retur_penjualan_id = rp.id
+                        WHERE rpd.order_item_id = order_items.id
+                          AND rp.status IN ("draft", "selesai")
+                    ) / (
+                        SELECT COALESCE(SUM(mb.quantity), 1)
+                        FROM mapping_barangs mb
+                        WHERE mb.platform_product_id = order_items.platform_product_id
+                          AND mb.is_active = 1
+                    )
+                ) as returns_from_valid
+            ')
+            ->first();
+        
+        $returnsFromValidOrders = $returnsValidData ? (float) $returnsValidData->returns_from_valid : 0;
         
         // Calculate net quantity (total sold - returns) from valid orders
         $totalNetQuantity = (float) $summaryData->total_quantity_sold - (float) $returnsFromValidOrders;
@@ -729,92 +720,61 @@ class ProductAnalyticsController extends Controller
         // Replace paginator items with transformed data
         $paginator->setCollection($transformedItems);
         
-        // Calculate total orders correctly (unique orders, exclude returns) - same logic as other reports
-        $baseOrderQuery = Order::withoutGlobalScope('mainCategory')
-            ->whereNotNull('platform_id')
-            ->whereBetween('tanggal', [$startDateCarbon, $endDateCarbon]);
+        // Calculate total orders correctly (unique orders, exclude returns) - direct DB aggregate (no memory array pluck)
+        $validOrdersBase = DB::table('orders')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                    ->from('retur_penjualans')
+                    ->whereColumn('retur_penjualans.order_id', 'orders.id')
+                    ->whereIn('status', ['draft', 'selesai']);
+            });
         
         if ($selectedPlatform) {
-            $baseOrderQuery->where('platform_id', $selectedPlatform);
+            $validOrdersBase->where('orders.platform_id', $selectedPlatform);
         }
-        
-        // Get all order IDs matching filters
-        $allOrderIds = $baseOrderQuery->pluck('id')->toArray();
-        
-        // Get order IDs that have returns (exclude them)
-        $orderIdsWithReturn = [];
-        if (!empty($allOrderIds)) {
-            $orderIdsWithReturn = ReturPenjualan::whereIn('order_id', $allOrderIds)
-                ->pluck('order_id')
-                ->unique()
-                ->toArray();
-        }
-        
-        // Calculate unique valid orders (excluding returns)
-        $totalOrders = count($allOrderIds) - count($orderIdsWithReturn);
-        
-        // Get valid order IDs (excluding returns)
-        $validOrderIds = array_diff($allOrderIds, $orderIdsWithReturn);
-        
-        // Get total returns count
-        $totalReturnsCount = !empty($allOrderIds) 
-            ? ReturPenjualan::whereIn('order_id', $allOrderIds)->count() 
-            : 0;
-        
-        // Calculate total_products and total_quantity from valid orders only
-        // For internal products, we need to count unique internal products from valid orders
-        $validInternalProductIds = [];
-        $totalQuantitySold = 0;
-        
-        if (!empty($validOrderIds)) {
-            // Get order items from valid orders
-            $validOrderItems = OrderItem::query()
-                ->join('orders', 'order_items.order_id', '=', 'orders.id')
-                ->whereIn('order_items.order_id', $validOrderIds)
-                ->whereNotNull('orders.platform_id')
-                ->with(['platformProduct.mappingBarang' => function($q) {
-                    $q->where('is_active', true);
-                }])
-                ->get();
-            
-            // Filter by platform if selected
-            if ($selectedPlatform) {
-                $validOrderItems = $validOrderItems->filter(function($item) use ($selectedPlatform) {
-                    return $item->order && $item->order->platform_id == $selectedPlatform;
-                });
-            }
-            
-            // Calculate quantities and collect product IDs
-            $productQtys = [];
-            foreach ($validOrderItems as $item) {
-                if (!$item->platformProduct) continue;
-                
-                $platformProduct = $item->platformProduct;
-                $mappings = $platformProduct->mappingBarang->where('is_active', true);
-                
-                if ($mappings->isEmpty()) continue;
-                
-                foreach ($mappings as $mapping) {
-                    if (!$mapping->product) continue;
-                    
-                    $productId = $mapping->product->id;
-                    $mappingQuantity = $mapping->quantity;
-                    
-                    // FIXED: Calculate real quantity (order_items.quantity × mapping.quantity)
-                    $internalProductQty = $item->quantity * $mappingQuantity;
-                    
-                    if (!isset($productQtys[$productId])) {
-                        $productQtys[$productId] = 0;
-                    }
-                    $productQtys[$productId] += $internalProductQty;
-                    $validInternalProductIds[] = $productId;
+
+        $totalOrders = (clone $validOrdersBase)->count('orders.id');
+
+        // Total returns count in period
+        $totalReturnsCount = DB::table('retur_penjualans')
+            ->whereIn('status', ['draft', 'selesai'])
+            ->whereExists(function($q) use ($startDateCarbon, $endDateCarbon, $selectedPlatform) {
+                $q->select(DB::raw(1))
+                    ->from('orders')
+                    ->whereColumn('orders.id', 'retur_penjualans.order_id')
+                    ->whereNotNull('orders.platform_id')
+                    ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon]);
+                if ($selectedPlatform) {
+                    $q->where('orders.platform_id', $selectedPlatform);
                 }
-            }
-            
-            $validInternalProductIds = array_unique($validInternalProductIds);
-            $totalQuantitySold = array_sum($productQtys);
-        }
-        
+            })
+            ->count();
+
+        // Calculate total unique internal products and total quantity sold directly via DB
+        $internalAggregates = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('mapping_barangs', 'order_items.platform_product_id', '=', 'mapping_barangs.platform_product_id')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->where('mapping_barangs.is_active', 1)
+            ->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                    ->from('retur_penjualans')
+                    ->whereColumn('retur_penjualans.order_id', 'orders.id')
+                    ->whereIn('status', ['draft', 'selesai']);
+            })
+            ->when($selectedPlatform, function($q) use ($selectedPlatform) {
+                $q->where('orders.platform_id', $selectedPlatform);
+            })
+            ->selectRaw('COUNT(DISTINCT mapping_barangs.product_id) as total_products')
+            ->selectRaw('COALESCE(SUM(order_items.quantity * mapping_barangs.quantity), 0) as total_quantity_sold')
+            ->first();
+
+        $totalProducts = (int) ($internalAggregates->total_products ?? 0);
+        $totalQuantitySold = (float) ($internalAggregates->total_quantity_sold ?? 0);
+
         // Calculate total returns using database query (from all orders in period)
         $totalReturnsData = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
@@ -851,50 +811,54 @@ class ProductAnalyticsController extends Controller
         
         $totalReturnsQty = $totalReturnsData ? (float) $totalReturnsData->total_returns : 0;
         
-        // Calculate returns from valid orders only (for net quantity calculation)
-        $returnsFromValidOrders = 0;
-        if (!empty($validOrderIds)) {
-            $returnsValidData = DB::table('order_items')
-                ->join('orders', 'order_items.order_id', '=', 'orders.id')
-                ->join('mapping_barangs', 'order_items.platform_product_id', '=', 'mapping_barangs.platform_product_id')
-                ->whereIn('order_items.order_id', $validOrderIds)
-                ->where('mapping_barangs.is_active', 1)
-                ->when($selectedPlatform, function($q) use ($selectedPlatform) {
-                    $q->where('orders.platform_id', $selectedPlatform);
-                })
-                ->when($search, function($q) use ($search) {
-                    $q->whereExists(function($query) use ($search) {
-                        $query->select(DB::raw(1))
-                            ->from('products')
-                            ->whereColumn('products.id', 'mapping_barangs.product_id')
-                            ->where(function($q2) use ($search) {
-                                $q2->where('products.name', 'like', "%$search%")
-                                   ->orWhere('products.sku', 'like', "%$search%");
-                            });
-                    });
-                })
-                ->selectRaw('
-                    SUM(
-                        (
-                            SELECT COALESCE(SUM(rpd.qty), 0)
-                            FROM retur_penjualan_details rpd
-                            JOIN retur_penjualans rp ON rpd.retur_penjualan_id = rp.id
-                            WHERE rpd.order_item_id = order_items.id
-                              AND rp.status IN ("draft", "selesai")
-                        )
-                    ) as returns_from_valid
-                ')
-                ->first();
-            
-            $returnsFromValidOrders = $returnsValidData ? (float) $returnsValidData->returns_from_valid : 0;
-        }
+        // Calculate returns from valid orders directly via DB query
+        $returnsValidData = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('mapping_barangs', 'order_items.platform_product_id', '=', 'mapping_barangs.platform_product_id')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->where('mapping_barangs.is_active', 1)
+            ->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                    ->from('retur_penjualans')
+                    ->whereColumn('retur_penjualans.order_id', 'orders.id')
+                    ->whereIn('status', ['draft', 'selesai']);
+            })
+            ->when($selectedPlatform, function($q) use ($selectedPlatform) {
+                $q->where('orders.platform_id', $selectedPlatform);
+            })
+            ->when($search, function($q) use ($search) {
+                $q->whereExists(function($query) use ($search) {
+                    $query->select(DB::raw(1))
+                        ->from('products')
+                        ->whereColumn('products.id', 'mapping_barangs.product_id')
+                        ->where(function($q2) use ($search) {
+                            $q2->where('products.name', 'like', "%$search%")
+                               ->orWhere('products.sku', 'like', "%$search%");
+                        });
+                });
+            })
+            ->selectRaw('
+                SUM(
+                    (
+                        SELECT COALESCE(SUM(rpd.qty), 0)
+                        FROM retur_penjualan_details rpd
+                        JOIN retur_penjualans rp ON rpd.retur_penjualan_id = rp.id
+                        WHERE rpd.order_item_id = order_items.id
+                          AND rp.status IN ("draft", "selesai")
+                    )
+                ) as returns_from_valid
+            ')
+            ->first();
+        
+        $returnsFromValidOrders = $returnsValidData ? (float) $returnsValidData->returns_from_valid : 0;
         
         // Calculate net quantity (total sold - returns) from valid orders
         $totalNetQuantity = (float) $totalQuantitySold - (float) $returnsFromValidOrders;
         
         // Calculate summary - using data from valid orders only (same logic as other reports)
         $summary = [
-            'total_products' => count($validInternalProductIds), // Unique internal products from valid orders
+            'total_products' => $totalProducts, // Unique internal products from valid orders
             'total_quantity' => max(0, $totalNetQuantity), // Net quantity (sold - returns) from valid orders
             'total_quantity_with_returns' => (float) $totalQuantitySold, // Total quantity sold from valid orders (before retur)
             'total_returns' => (float) $totalReturnsQty, // Total returned quantity from all orders in period

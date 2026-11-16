@@ -86,12 +86,11 @@ class FinanceAnalyticsController extends Controller
         // Filter by outstanding status
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
-                $query->where('outstanding', 0);
+                // Lunas: toleransi floating point (konsisten dengan FilterBuilder & Pembayaran*Controller)
+                $query->whereRaw('ABS(outstanding) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
-                $query->where(function($q) {
-                    $q->where('outstanding', '>', 0)
-                      ->orWhere('outstanding', '<', 0);
-                });
+                // Outstanding: selisih signifikan
+                $query->whereRaw('ABS(outstanding) > 0.01');
             }
         }
 
@@ -196,12 +195,11 @@ class FinanceAnalyticsController extends Controller
         // Filter by outstanding status
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
-                $query->where('outstanding', 0);
+                // Lunas: toleransi floating point (konsisten dengan FilterBuilder & Pembayaran*Controller)
+                $query->whereRaw('ABS(outstanding) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
-                $query->where(function($q) {
-                    $q->where('outstanding', '>', 0)
-                      ->orWhere('outstanding', '<', 0);
-                });
+                // Outstanding: selisih signifikan
+                $query->whereRaw('ABS(outstanding) > 0.01');
             }
         }
         
@@ -306,12 +304,11 @@ class FinanceAnalyticsController extends Controller
         // Filter by outstanding status
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
-                $query->where('outstanding', 0);
+                // Lunas: toleransi floating point (konsisten dengan FilterBuilder & Pembayaran*Controller)
+                $query->whereRaw('ABS(outstanding) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
-                $query->where(function($q) {
-                    $q->where('outstanding', '>', 0)
-                      ->orWhere('outstanding', '<', 0);
-                });
+                // Outstanding: selisih signifikan
+                $query->whereRaw('ABS(outstanding) > 0.01');
             }
         }
 
@@ -416,12 +413,11 @@ class FinanceAnalyticsController extends Controller
         // Filter by outstanding status
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
-                $query->where('outstanding', 0);
+                // Lunas: toleransi floating point (konsisten dengan FilterBuilder & Pembayaran*Controller)
+                $query->whereRaw('ABS(outstanding) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
-                $query->where(function($q) {
-                    $q->where('outstanding', '>', 0)
-                      ->orWhere('outstanding', '<', 0);
-                });
+                // Outstanding: selisih signifikan
+                $query->whereRaw('ABS(outstanding) > 0.01');
             }
         }
         

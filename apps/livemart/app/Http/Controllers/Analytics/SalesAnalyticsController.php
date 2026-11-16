@@ -107,35 +107,24 @@ class SalesAnalyticsController extends Controller
             return $order;
         });
         
-        // Calculate summary using aggregate queries (very lightweight, no data loading)
-        $summaryQuery = Order::withoutGlobalScope('mainCategory')
-            ->whereNotNull('platform_id')
-            ->whereBetween('tanggal', [$startDateCarbon, $endDateCarbon]);
+        // Calculate summary using aggregate queries directly on orders/order_items (avoid passing tens of thousands of IDs to whereIn)
+        $summaryQuery = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->where('order_items.quantity', '>', 0);
             
         if ($request->filled('platform_id')) {
-            $summaryQuery->where('platform_id', $request->platform_id);
+            $summaryQuery->where('orders.platform_id', $request->platform_id);
         }
         
-        $summaryQuery->whereExists(function($q) {
-            $q->select(DB::raw(1))
-                ->from('order_items')
-                ->whereColumn('order_items.order_id', 'orders.id')
-                ->where('order_items.quantity', '>', 0);
-        });
-        
-        // Get valid order IDs for summary calculation
-        $validOrderIds = $summaryQuery->pluck('id')->toArray();
-        
-        // Calculate summary using single aggregate query (all in DB)
-        if (!empty($validOrderIds)) {
-            $summaryData = DB::table('order_items')
-                ->selectRaw('COUNT(DISTINCT order_id) as total_orders')
-                ->selectRaw('COALESCE(SUM(price_after_discount * quantity), 0) as total_value')
-                ->selectRaw('COALESCE(SUM(quantity), 0) as total_volume')
-                ->whereIn('order_id', $validOrderIds)
-                ->where('quantity', '>', 0)
-                ->first();
-        } else {
+        $summaryData = $summaryQuery
+            ->selectRaw('COUNT(DISTINCT orders.id) as total_orders')
+            ->selectRaw('COALESCE(SUM(order_items.price_after_discount * order_items.quantity), 0) as total_value')
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_volume')
+            ->first();
+
+        if (!$summaryData) {
             $summaryData = (object)[
                 'total_orders' => 0,
                 'total_value' => 0,
@@ -170,52 +159,39 @@ class SalesAnalyticsController extends Controller
         ];
         
         // Get platform summary using aggregate query (lightweight)
-        $platformSummaryQuery = Order::withoutGlobalScope('mainCategory')
-            ->whereNotNull('platform_id')
-            ->whereBetween('tanggal', [$startDateCarbon, $endDateCarbon]);
+        // Platform summary query directly via join (avoid passing tens of thousands of IDs to whereIn)
+        $platformSummaryQuery = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('platforms', 'orders.platform_id', '=', 'platforms.id')
+            ->whereNotNull('orders.platform_id')
+            ->whereBetween('orders.tanggal', [$startDateCarbon, $endDateCarbon])
+            ->where('order_items.quantity', '>', 0);
             
         if ($request->filled('platform_id')) {
-            $platformSummaryQuery->where('platform_id', $request->platform_id);
+            $platformSummaryQuery->where('orders.platform_id', $request->platform_id);
         }
         
-        $platformSummaryQuery->whereExists(function($q) {
-            $q->select(DB::raw(1))
-                ->from('order_items')
-                ->whereColumn('order_items.order_id', 'orders.id')
-                ->where('order_items.quantity', '>', 0);
-        });
-        
-        $platformOrderIds = $platformSummaryQuery->pluck('id')->toArray();
-        
-        if (!empty($platformOrderIds)) {
-            $platformSummary = DB::table('orders')
-                ->join('order_items', 'orders.id', '=', 'order_items.order_id')
-                ->join('platforms', 'orders.platform_id', '=', 'platforms.id')
-                ->select('platforms.id as platform_id', 'platforms.name as platform')
-                ->selectRaw('COUNT(DISTINCT orders.id) as order_count')
-                ->selectRaw('COALESCE(SUM(order_items.price_after_discount * order_items.quantity), 0) as total_value')
-                ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_volume')
-                ->whereIn('orders.id', $platformOrderIds)
-                ->where('order_items.quantity', '>', 0)
-                ->groupBy('platforms.id', 'platforms.name')
-                ->get()
-                ->map(function($item) {
-                    return [
-                        'platform' => $item->platform,
-                        'order_count' => (int) $item->order_count,
-                        'total_value' => (float) $item->total_value,
-                        'total_volume' => (float) $item->total_volume,
-                        'avg_order_value' => $item->order_count > 0 
-                            ? (float) $item->total_value / (int) $item->order_count 
-                            : 0,
-                        'avg_order_volume' => $item->order_count > 0 
-                            ? (float) $item->total_volume / (int) $item->order_count 
-                            : 0,
-                    ];
-                });
-        } else {
-            $platformSummary = collect();
-        }
+        $platformSummary = $platformSummaryQuery
+            ->select('platforms.id as platform_id', 'platforms.name as platform')
+            ->selectRaw('COUNT(DISTINCT orders.id) as order_count')
+            ->selectRaw('COALESCE(SUM(order_items.price_after_discount * order_items.quantity), 0) as total_value')
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_volume')
+            ->groupBy('platforms.id', 'platforms.name')
+            ->get()
+            ->map(function($item) {
+                return [
+                    'platform' => $item->platform,
+                    'order_count' => (int) $item->order_count,
+                    'total_value' => (float) $item->total_value,
+                    'total_volume' => (float) $item->total_volume,
+                    'avg_order_value' => $item->order_count > 0 
+                        ? (float) $item->total_value / (int) $item->order_count 
+                        : 0,
+                    'avg_order_volume' => $item->order_count > 0 
+                        ? (float) $item->total_volume / (int) $item->order_count 
+                        : 0,
+                ];
+            });
         
         return view('analytics.sales_by_platform', [
             'orders' => $orders, // Paginated collection
@@ -1361,7 +1337,7 @@ class SalesAnalyticsController extends Controller
         
         // Apply platform filter if set
         $selectedPlatform = null;
-        if ($request->filled('platform_id')) {
+        if ($request->filled('platform_id') && $request->input('platform_id') !== 'all') {
             $selectedPlatform = $request->input('platform_id');
             $financialTransactionsQuery .= " AND o.platform_id = ?";
             $params[] = $selectedPlatform;
@@ -1467,8 +1443,8 @@ class SalesAnalyticsController extends Controller
             SELECT 
                 DAY(o.tanggal) as date_number,
                 COUNT(DISTINCT o.id) as order_count,
-                GROUP_CONCAT(DISTINCT o.id ORDER BY o.id LIMIT 10) as sample_order_ids,
-                GROUP_CONCAT(DISTINCT DATE(o.tanggal) ORDER BY o.tanggal LIMIT 5) as sample_dates
+                SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT o.id ORDER BY o.id), ',', 10) as sample_order_ids,
+                SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT DATE(o.tanggal) ORDER BY o.tanggal), ',', 5) as sample_dates
             FROM orders o
             LEFT JOIN (
                 SELECT DISTINCT order_id 
@@ -1501,7 +1477,7 @@ class SalesAnalyticsController extends Controller
             SELECT 
                 DATE(tanggal) as full_date,
                 COUNT(*) as order_count,
-                GROUP_CONCAT(id ORDER BY id LIMIT 10) as sample_order_ids
+                SUBSTRING_INDEX(GROUP_CONCAT(id ORDER BY id), ',', 10) as sample_order_ids
             FROM orders
             WHERE tanggal BETWEEN ? AND ?
             AND DAY(tanggal) = 31

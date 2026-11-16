@@ -18,9 +18,9 @@ class FilterBuilder
         return " AND {$columnName} BETWEEN {$startQuoted} AND {$endQuoted}";
     }
     
-    public static function platformFilter(?int $platformId, string $columnName = 'platform_id'): string
+    public static function platformFilter($platformId, string $columnName = 'platform_id'): string
     {
-        if (!$platformId) {
+        if (!$platformId || $platformId === 'all') {
             return '';
         }
         
@@ -180,7 +180,9 @@ class FilterBuilder
     
     public static function outstandingFilter(?string $status, string $tableAlias = ''): string
     {
-        if (!$status) {
+        // PERBAIKAN BUG 1: jangan pakai ! $status — string '0' itu falsy di PHP,
+        // sehingga filter "Lunas (outstanding = 0)" pernah mengembalikan '' (tidak ada filter sama sekali).
+        if ($status === null || $status === '') {
             return '';
         }
         
