@@ -183,6 +183,12 @@ class PembayaranTiktok2Controller extends Controller
             ->whereDoesntHave('tiktok2FinancialTransactions')
             ->where('platform_id', $platformId);
 
+        // BUG 1: filter "Lunas (outstanding = 0)" tidak boleh tetap menampilkan
+        // panel order yang belum bayar — order tanpa transaksi memang outstanding.
+        if ($request->filled('outstanding_status') && $request->outstanding_status === '0') {
+            $missingOrdersQuery->whereRaw('1 = 0');
+        }
+
         // Apply the order number filter to unpaid orders as well.
         if ($request->filled('order_number')) {
             $missingOrdersQuery->where('order_number', 'like', '%' . $request->order_number . '%');
@@ -695,7 +701,7 @@ class PembayaranTiktok2Controller extends Controller
                 $totalQty = $order->orderItems->sum('quantity');
                 
                 // Preview data
-                $previewData[] = [
+                $previewData[count($data)] = [
                     'tanggal_order' => $orderDate,
                     'hari_order' => $order->hari,
                     'no_order' => $order->order_number,
@@ -930,7 +936,20 @@ class PembayaranTiktok2Controller extends Controller
             // Process rows with pre-loaded data
             $validOrders = [];
             $validTaxGroups = [];
-            
+
+            // Kolom uang dari Excel. Jika 1 no_order muncul di banyak baris,
+            // nilai-nilai ini harus DIJUMLAHKAN, bukan ditimpa baris berikutnya.
+            $moneyKeys = [
+                'JUMLAH MASUK PEMBAYARAN',
+                'BIAYA ADMIN',
+                'AFFILIATE COMMISSION',
+                'SELLER SHIPPING FEE + SFP SERVICE FEE',
+                'VOUCHER XTRA SERVICE FEE',
+                'CASHBACK FEE',
+                'BIAYA6', 'BIAYA7', 'BIAYA8', 'BIAYA9',
+                'BIAYA10', 'BIAYA11', 'BIAYA12',
+            ];
+
             foreach ($processedRows as $processedRow) {
                 $index = $processedRow['index'];
                 $rowData = $processedRow['rowData'];
@@ -994,19 +1013,34 @@ class PembayaranTiktok2Controller extends Controller
                     }
                     
                     // Order is valid, add to the list of valid orders
-                    $validOrders[$order->id] = [
-                        'order' => $order,
-                        'rowData' => $rowData,
-                        'taxGroups' => $itemsByTaxStatus,
-                        'totalQty' => $totalQty
-                    ];
-                    
-                    // Track all tax status groups needed
-                    foreach ($itemsByTaxStatus as $taxStatus => $items) {
-                        if (!isset($validTaxGroups[$taxStatus])) {
-                            $validTaxGroups[$taxStatus] = 0;
+                    if (isset($validOrders[$order->id])) {
+                        // BUG 2: no_order yang sama muncul di beberapa baris Excel.
+                        // Baris berikutnya tidak boleh menimpa baris sebelumnya —
+                        // jumlahkan kolom uangnya supaya saldo_masuk tidak hilang.
+                        foreach ($moneyKeys as $moneyKey) {
+                            $previous = (float) ($validOrders[$order->id]['rowData'][$moneyKey] ?? 0);
+                            $current = (float) ($rowData[$moneyKey] ?? 0);
+                            if ($previous != 0.0 || $current != 0.0) {
+                                $validOrders[$order->id]['rowData'][$moneyKey] = $previous + $current;
+                            }
                         }
-                        $validTaxGroups[$taxStatus]++;
+                        // Tanggal/hari pembayaran: pakai baris pertama
+                    } else {
+                        $validOrders[$order->id] = [
+                            'order' => $order,
+                            'rowData' => $rowData,
+                            'taxGroups' => $itemsByTaxStatus,
+                            'totalQty' => $totalQty
+                        ];
+
+                        // Track all tax status groups needed (hanya 1x per order,
+                        // bukan per baris Excel — kalau tidak, jatah nomor invoice dobel)
+                        foreach ($itemsByTaxStatus as $taxStatus => $items) {
+                            if (!isset($validTaxGroups[$taxStatus])) {
+                                $validTaxGroups[$taxStatus] = 0;
+                            }
+                            $validTaxGroups[$taxStatus]++;
+                        }
                     }
                     
                 } catch (\Exception $e) {
@@ -1146,7 +1180,11 @@ class PembayaranTiktok2Controller extends Controller
                         }
                         
                         // Calculate proportion based on VALUE, not quantity
-                        $proportion = ($totalOrderPrice > 0) ? $groupValue / $totalOrderPrice : 1;
+                        // Fallback harus dibagi rata: kalau pakai 1, saldo_masuk/fee
+                        // ikut terduplikasi penuh ke tiap grup pajak (BUG 2)
+                        $proportion = ($totalOrderPrice > 0)
+                            ? $groupValue / $totalOrderPrice
+                            : (1 / count($sortedItemsByTaxStatus));
                         
                         // Set values based on value-based proportion
                         $transaction->nominal_harga = round($groupValue, 2); // Use actual group value

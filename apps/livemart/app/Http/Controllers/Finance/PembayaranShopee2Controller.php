@@ -182,6 +182,12 @@ class PembayaranShopee2Controller extends Controller
             ->whereDoesntHave('shopee2FinancialTransactions')
             ->where('platform_id', $platformId);
 
+        // BUG 1: filter "Lunas (outstanding = 0)" tidak boleh tetap menampilkan
+        // panel order yang belum bayar — order tanpa transaksi memang outstanding.
+        if ($request->filled('outstanding_status') && $request->outstanding_status === '0') {
+            $missingOrdersQuery->whereRaw('1 = 0');
+        }
+
         // Apply the order number filter to unpaid orders as well.
         if ($request->filled('order_number')) {
             $missingOrdersQuery->where('order_number', 'like', '%' . $request->order_number . '%');
@@ -631,7 +637,7 @@ class PembayaranShopee2Controller extends Controller
                                 $orderData['invoices'][] = $invoice;
                                 
                                 // Add the order data to the preview data
-                                $previewData[] = $orderData;
+                                $previewData[count($data)] = $orderData;
                                 Log::info("Added order data for order {$orderData['no_order']} with " . count($orderData['invoices']) . " invoices");
                             }
                         }
@@ -793,6 +799,18 @@ class PembayaranShopee2Controller extends Controller
             
             // Process rows with pre-loaded data
             $validOrders = [];
+
+            // Kolom uang dari Excel. Jika 1 no_order muncul di banyak baris,
+            // nilai-nilai ini harus DIJUMLAHKAN, bukan ditimpa baris berikutnya.
+            $moneyKeys = [
+                'JUMLAH MASUK PEMBAYARAN',
+                'Voucher Ditanggung Penjual',
+                'KOMISI AMS/AFFILIATE',
+                'BIAYA ADMIN',
+                'BIAYA LAYANAN (GRATIS ONGKIR + CASHBACK)',
+                'DISKON 5', 'DISKON 6', 'DISKON 7', 'DISKON 8',
+                'DISKON 9', 'DISKON 10', 'DISKON 11', 'DISKON 12',
+            ];
             
             foreach ($processedRows as $rowInfo) {
                 $index = $rowInfo['index'];
@@ -855,10 +873,24 @@ class PembayaranShopee2Controller extends Controller
                     }
                     
                     // Order is valid, add to the list of valid orders
-                    $validOrders[$order->id] = [
-                        'order' => $order,
-                        'rowData' => $rowData,
-                    ];
+                    if (isset($validOrders[$order->id])) {
+                        // BUG 2: no_order yang sama muncul di beberapa baris Excel.
+                        // Baris berikutnya tidak boleh menimpa baris sebelumnya —
+                        // jumlahkan kolom uangnya supaya saldo_masuk tidak hilang.
+                        foreach ($moneyKeys as $moneyKey) {
+                            $previous = (float) ($validOrders[$order->id]['rowData'][$moneyKey] ?? 0);
+                            $current = (float) ($rowData[$moneyKey] ?? 0);
+                            if ($previous != 0.0 || $current != 0.0) {
+                                $validOrders[$order->id]['rowData'][$moneyKey] = $previous + $current;
+                            }
+                        }
+                        // Tanggal/hari pembayaran: pakai baris pertama
+                    } else {
+                        $validOrders[$order->id] = [
+                            'order' => $order,
+                            'rowData' => $rowData,
+                        ];
+                    }
                     
                 } catch (\Exception $e) {
                     $skippedCount++;
