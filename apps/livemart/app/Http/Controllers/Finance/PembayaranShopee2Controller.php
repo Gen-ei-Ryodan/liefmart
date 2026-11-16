@@ -101,12 +101,11 @@ class PembayaranShopee2Controller extends Controller
         // Filter by outstanding status
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
-                $query->where('outstanding', 0);
+                // Lunas: toleransi floating point (sama seperti Shopee controller)
+                $query->whereRaw('ABS(outstanding) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
-                $query->where(function($q) {
-                    $q->where('outstanding', '>', 0)
-                      ->orWhere('outstanding', '<', 0);
-                });
+                // Outstanding: nilai > 0.01 atau < -0.01
+                $query->whereRaw('ABS(outstanding) > 0.01');
             }
         }
         
@@ -919,7 +918,7 @@ class PembayaranShopee2Controller extends Controller
                                   $nominal_diskon4 + $nominal_diskon5 + $nominal_diskon6 + $nominal_diskon7 + 
                                   $nominal_diskon8 + $nominal_diskon9 + $nominal_diskon10 + $nominal_diskon11 + $nominal_diskon12;
                     
-                    $outstanding = $nominal_fix - $saldo_masuk;
+                    $outstanding = round($nominal_fix - $saldo_masuk, 2);
                     
                     // Add validation for potential overpayment scenarios
                     if ($saldo_masuk > 0 && $nominal_fix > 0) {

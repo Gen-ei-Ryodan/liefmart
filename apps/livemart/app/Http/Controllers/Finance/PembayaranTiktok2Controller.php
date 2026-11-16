@@ -101,12 +101,11 @@ class PembayaranTiktok2Controller extends Controller
         // Filter by outstanding status
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
-                $query->where('outstanding', 0);
+                // Lunas: toleransi floating point (sama seperti Shopee controller)
+                $query->whereRaw('ABS(outstanding) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
-                $query->where(function($q) {
-                    $q->where('outstanding', '>', 0)
-                      ->orWhere('outstanding', '<', 0);
-                });
+                // Outstanding: nilai > 0.01 atau < -0.01
+                $query->whereRaw('ABS(outstanding) > 0.01');
             }
         }
         
@@ -1197,7 +1196,7 @@ class PembayaranTiktok2Controller extends Controller
                         $transaction->saldo_masuk = round($totalSaldoMasuk * $proportion, 2);
                         
                         // Calculate outstanding based on actual saldo_masuk
-                        $transaction->outstanding = $transaction->nominal_fix - $transaction->saldo_masuk;
+                        $transaction->outstanding = round($transaction->nominal_fix - $transaction->saldo_masuk, 2);
                         
                         // Add validation for potential overpayment scenarios
                         if ($transaction->saldo_masuk > 0 && $transaction->nominal_fix > 0) {

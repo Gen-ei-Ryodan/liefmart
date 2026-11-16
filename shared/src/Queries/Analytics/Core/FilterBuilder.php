@@ -187,9 +187,11 @@ class FilterBuilder
         $prefix = $tableAlias ? $tableAlias . '.' : '';
         
         if ($status === '0') {
-            return " AND {$prefix}outstanding = 0";
+            // Lunas: toleransi floating point (ABS <= 0.01, konsisten dengan PembayaranShopeeController)
+            return " AND ABS({$prefix}outstanding) <= 0.01";
         } elseif ($status === '1') {
-            return " AND ({$prefix}outstanding > 0 OR {$prefix}outstanding < 0)";
+            // Outstanding: nilai signifikan > 0.01
+            return " AND ABS({$prefix}outstanding) > 0.01";
         }
         
         return '';

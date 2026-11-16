@@ -202,7 +202,7 @@ class Tiktok2FinancialTransaction extends Model
      */
     public function calculateOutstanding()
     {
-        $this->outstanding = $this->nominal_fix - ($this->saldo_masuk ?? 0);
+        $this->outstanding = round($this->nominal_fix - ($this->saldo_masuk ?? 0), 2);
         return $this;
     }
 

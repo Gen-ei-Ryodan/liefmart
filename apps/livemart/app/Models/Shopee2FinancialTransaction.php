@@ -167,7 +167,7 @@ class Shopee2FinancialTransaction extends Model
     public function calculateOutstanding()
     {
         // Outstanding is simply nominal_fix minus saldo_masuk
-        $this->outstanding = $this->nominal_fix - ($this->saldo_masuk ?? 0);
+        $this->outstanding = round($this->nominal_fix - ($this->saldo_masuk ?? 0), 2);
         return $this;
     }
 
