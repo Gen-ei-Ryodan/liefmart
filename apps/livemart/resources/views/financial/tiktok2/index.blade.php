@@ -331,7 +331,7 @@
                             @foreach($orderTransactions as $index => $transaction)
                             @if(!$transaction) @continue @endif
                             @php
-                                $isUnpaid = optional($transaction)->outstanding > 0;
+                                $isUnpaid = (($transaction->outstanding ?? 0) > 0);
                                 $isOlderThan3Weeks = false;
                                 if ($transaction->order && $transaction->order->tanggal) {
                                     $isOlderThan3Weeks = $transaction->order->tanggal->diffInDays(now()) > 21;
@@ -560,8 +560,8 @@
                                         <small class="text-muted">{{ $transaction->hari_masuk_pembayaran }}</small>
                                     </div>
                                 </td>
-                                <td class="text-end fw-bold {{ $transaction->outstanding > 0 ? 'text-danger' : 'text-success' }}">
-                                    {{ number_format($transaction->outstanding, 0, ',', '.') }}
+                                <td class="text-end fw-bold {{ ($transaction->outstanding ?? 0) > 0 ? 'text-danger' : 'text-success' }}">
+                                    {{ number_format($transaction->outstanding ?? 0, 0, ',', '.') }}
                                 </td>
                                 <td class="text-end pe-3">
                                     <div class="d-flex gap-1 justify-content-end">

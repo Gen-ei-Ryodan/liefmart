@@ -309,7 +309,7 @@
                             @foreach($orderTransactions as $index => $transaction)
                             @if($transaction)
                             @php
-                                $isUnpaid = $transaction->outstanding > 0;
+                                $isUnpaid = (($transaction->outstanding ?? 0) > 0);
                                 $isOlderThan3Weeks = false;
                                 if ($transaction->order && $transaction->order->tanggal) {
                                     $isOlderThan3Weeks = $transaction->order->tanggal->diffInDays(now()) > 21;
@@ -514,8 +514,8 @@
                                     </div>
                                 </td>
                                 <td class="text-end fw-bold">
-                                    @if($transaction->outstanding > 0)
-                                        <span class="badge bg-danger text-white">Rp {{ number_format($transaction->outstanding, 0, ',', '.') }}</span>
+                                    @if(($transaction->outstanding ?? 0) > 0)
+                                        <span class="badge bg-danger text-white">Rp {{ number_format($transaction->outstanding ?? 0, 0, ',', '.') }}</span>
                                     @else
                                         <span class="badge bg-success text-white">Lunas</span>
                                     @endif

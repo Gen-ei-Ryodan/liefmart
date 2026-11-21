@@ -102,10 +102,10 @@ class PembayaranShopee2Controller extends Controller
         if ($request->filled('outstanding_status')) {
             if ($request->outstanding_status === '0') {
                 // Lunas: toleransi floating point (sama seperti Shopee controller)
-                $query->whereRaw('ABS(outstanding) <= 0.01');
+                $query->whereRaw('ABS(COALESCE(outstanding, 0)) <= 0.01');
             } elseif ($request->outstanding_status === '1') {
                 // Outstanding: nilai > 0.01 atau < -0.01
-                $query->whereRaw('ABS(outstanding) > 0.01');
+                $query->whereRaw('ABS(COALESCE(outstanding, 0)) > 0.01');
             }
         }
         
